@@ -1,0 +1,1976 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>AI Career Coach</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{p:{50:'#eef2ff',100:'#e0e7ff',500:'#6366f1',600:'#4f46e5',700:'#4338ca',900:'#312e81'}}}}}</script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{font-family:'Inter',sans-serif}
+[dir=rtl]{font-family:'Cairo',sans-serif}
+#chatMessages{scroll-behavior:smooth}
+.msg-user .bubble{background:#4f46e5;color:#fff;border-radius:1.2rem 1.2rem 0.3rem 1.2rem}
+.msg-assistant .bubble{background:#fff;color:#1e293b;border-radius:1.2rem 1.2rem 1.2rem 0.3rem;border:1px solid #e2e8f0}
+[dir=rtl] .msg-user .bubble{border-radius:1.2rem 1.2rem 1.2rem 0.3rem}
+[dir=rtl] .msg-assistant .bubble{border-radius:1.2rem 1.2rem 0.3rem 1.2rem}
+.typing-dot{width:8px;height:8px;background:#94a3b8;border-radius:50%;animation:bounce 1.2s infinite}
+.typing-dot:nth-child(2){animation-delay:.2s}
+.typing-dot:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+.sidebar-conv:hover{background:#f1f5f9}
+.sidebar-conv.active{background:#e0e7ff;color:#4338ca}
+pre{white-space:pre-wrap;font-family:inherit}
+.tool-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:.75rem;padding:.75rem 1rem;margin-top:.5rem;font-size:.78rem}
+.score-bar{height:6px;border-radius:3px;background:#e2e8f0;overflow:hidden}
+.score-fill{height:100%;border-radius:3px;transition:width .5s}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+textarea:focus,input:focus{outline:2px solid #4f46e5;outline-offset:0}
+.page-section{display:none}
+/* Active page fills the main container */
+.page-section.active{display:flex;flex-direction:column;flex:1;min-height:0}
+/* Non-chat pages scroll their own content */
+.page-section.active:not(#page-chat){overflow-y:auto}
+/* Chat page clips overflow — inner panels handle their own scroll */
+#page-chat.active{overflow:hidden}
+</style>
+</head>
+<body class="bg-slate-100 h-screen flex flex-col overflow-hidden">
+
+<!-- ═══════════════════ TOP NAV ═══════════════════ -->
+<header class="bg-white border-b border-slate-200 z-40 flex-shrink-0">
+  <div class="max-w-full px-3 sm:px-6 h-14 flex items-center justify-between">
+    <!-- Brand -->
+    <button onclick="showPage('chat')" class="flex items-center gap-2 font-bold text-p-700 text-base">
+      <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-p-700 to-indigo-400 flex items-center justify-center text-white text-sm">🎯</div>
+      <span id="brandLabel">AI Career Coach</span>
+    </button>
+    <!-- Nav links (desktop) -->
+    <nav class="hidden md:flex items-center gap-1 text-xs font-medium text-slate-600">
+      <button onclick="showPage('chat')"      class="nav-btn px-3 py-1.5 rounded-lg hover:bg-slate-100" data-page="chat"     >💬 <span data-t="navChat">Chat</span></button>
+      <button onclick="showPage('cv-create')" class="nav-btn px-3 py-1.5 rounded-lg hover:bg-slate-100" data-page="cv-create">📄 <span data-t="navCreate">Create CV</span></button>
+      <button onclick="showPage('cv-opt')"    class="nav-btn px-3 py-1.5 rounded-lg hover:bg-slate-100" data-page="cv-opt"   >✏️ <span data-t="navOpt">Optimize</span></button>
+      <button onclick="showPage('cv-eval')"   class="nav-btn px-3 py-1.5 rounded-lg hover:bg-slate-100" data-page="cv-eval"  >📊 <span data-t="navEval">Evaluate</span></button>
+      <button onclick="showPage('job-match')" class="nav-btn px-3 py-1.5 rounded-lg hover:bg-slate-100" data-page="job-match">🔍 <span data-t="navMatch">Job Match</span></button>
+      <button onclick="showPage('interview')" class="nav-btn px-3 py-1.5 rounded-lg hover:bg-slate-100" data-page="interview">🎤 <span data-t="navInterview">Interview</span></button>
+      <button onclick="showPage('rejection')" class="nav-btn px-3 py-1.5 rounded-lg hover:bg-slate-100" data-page="rejection">💔 <span data-t="navRej">Rejection</span></button>
+      <button onclick="showPage('offer')"     class="nav-btn px-3 py-1.5 rounded-lg hover:bg-slate-100" data-page="offer"    >💼 <span data-t="navOffer">Offer</span></button>
+    </nav>
+    <!-- Right controls -->
+    <div class="flex items-center gap-2">
+      <span id="aiDot" class="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border border-amber-200 bg-amber-50 text-amber-800 cursor-pointer" onclick="showAIInfo()">
+        <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse" id="aiDotInner"></span>
+        <span id="aiDotLabel">AI…</span>
+      </span>
+      <button onclick="toggleLang()" class="text-xs font-semibold px-2.5 py-1 border border-slate-200 rounded-lg hover:bg-slate-100" id="langBtn">ع</button>
+      <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-600">☰</button>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════ BODY (sidebar + main) ═══════════════════ -->
+<div class="flex flex-1 overflow-hidden">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="hidden md:flex flex-col w-60 bg-white border-r border-slate-200 flex-shrink-0 overflow-hidden z-30">
+    <!-- Mobile Service Links (visible on small screens when sidebar is toggled) -->
+    <div class="md:hidden p-2 border-b border-slate-100 grid grid-cols-2 gap-1 text-[11px] font-medium text-slate-700 bg-slate-50">
+      <button onclick="showPage('chat');toggleSidebar()"      class="px-2 py-1.5 rounded-lg hover:bg-white text-left rtl:text-right">💬 <span data-t="navChat">Chat</span></button>
+      <button onclick="showPage('cv-create');toggleSidebar()" class="px-2 py-1.5 rounded-lg hover:bg-white text-left rtl:text-right">📄 <span data-t="navCreate">Create CV</span></button>
+      <button onclick="showPage('cv-opt');toggleSidebar()"    class="px-2 py-1.5 rounded-lg hover:bg-white text-left rtl:text-right">✏️ <span data-t="navOpt">Optimize</span></button>
+      <button onclick="showPage('cv-eval');toggleSidebar()"   class="px-2 py-1.5 rounded-lg hover:bg-white text-left rtl:text-right">📊 <span data-t="navEval">Evaluate</span></button>
+      <button onclick="showPage('job-match');toggleSidebar()" class="px-2 py-1.5 rounded-lg hover:bg-white text-left rtl:text-right">🔍 <span data-t="navMatch">Job Match</span></button>
+      <button onclick="showPage('interview');toggleSidebar()" class="px-2 py-1.5 rounded-lg hover:bg-white text-left rtl:text-right">🎤 <span data-t="navInterview">Interview</span></button>
+      <button onclick="showPage('rejection');toggleSidebar()" class="px-2 py-1.5 rounded-lg hover:bg-white text-left rtl:text-right">💔 <span data-t="navRej">Rejection</span></button>
+      <button onclick="showPage('offer');toggleSidebar()"     class="px-2 py-1.5 rounded-lg hover:bg-white text-left rtl:text-right">💼 <span data-t="navOffer">Offer</span></button>
+    </div>
+    <div class="p-3 border-b border-slate-100 flex items-center justify-between">
+      <span class="text-xs font-bold text-slate-600 uppercase tracking-wider" data-t="sideHistory">History</span>
+      <button onclick="newConversation()" class="text-xs bg-p-600 hover:bg-p-700 text-white px-2 py-1 rounded-lg font-semibold" data-t="newChat">+ New</button>
+    </div>
+    <div id="convList" class="flex-1 overflow-y-auto p-2 space-y-1 text-xs">
+      <p class="text-slate-400 text-center mt-4" data-t="noHistory">No chats yet</p>
+    </div>
+  </aside>
+
+  <!-- MAIN PAGES CONTAINER -->
+  <main id="mainContainer" class="flex-1 min-h-0 flex flex-col">
+
+    <!-- ══ PAGE: CHAT ══════════════════════════════════════════════════ -->
+    <div id="page-chat" class="page-section active flex flex-col h-full overflow-hidden">
+
+      <!-- Welcome (shown when no messages) -->
+      <div id="welcomeScreen" class="flex-1 overflow-y-auto flex flex-col items-center justify-center p-6 text-center space-y-6">
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-p-700 to-indigo-400 flex items-center justify-center text-3xl shadow-lg">🎯</div>
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900" id="welcomeTitle">AI Career Coach</h1>
+          <p class="text-slate-500 text-sm mt-1" id="welcomeSub">Your personal AI-powered career advisor — powered by Gemini</p>
+          <p class="text-slate-400 text-xs mt-1" id="welcomeSub2">مدرب مهني ذكي يتحدث العربية والإنجليزية</p>
+        </div>
+        <!-- Suggested prompts grid -->
+        <div id="suggestGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-xl text-left rtl:text-right text-sm mt-2"></div>
+      </div>
+
+      <!-- Chat messages -->
+      <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4 hidden"></div>
+
+      <!-- Input bar -->
+      <div class="flex-shrink-0 bg-white border-t border-slate-200 p-3">
+        <!-- File upload strip -->
+        <div id="uploadStrip" class="hidden mb-2 p-2 bg-indigo-50 rounded-lg border border-indigo-100 flex items-center gap-2 text-xs text-indigo-800">
+          <span>📎</span><span id="uploadStripName">file.pdf</span>
+          <button onclick="clearUpload()" class="ml-auto text-red-500 font-bold">✕</button>
+        </div>
+        <div class="flex items-end gap-2 max-w-4xl mx-auto">
+          <!-- File attach -->
+          <label class="cursor-pointer p-2 rounded-xl hover:bg-slate-100 text-slate-500 flex-shrink-0" title="Attach CV file">
+            📎<input type="file" id="fileInput" class="hidden" accept=".pdf,.docx,.doc,.txt" onchange="handleFileAttach(event)">
+          </label>
+          <textarea id="chatInput" rows="1"
+            class="flex-1 resize-none border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-p-500 focus:outline-none max-h-32 leading-relaxed"
+            placeholder="Ask anything about your career…" data-t-placeholder="chatPlaceholder"
+            onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+          <button id="sendBtn" onclick="sendMessage()"
+            class="flex-shrink-0 w-10 h-10 bg-p-600 hover:bg-p-700 text-white rounded-xl flex items-center justify-center shadow-md transition-all">
+            <svg class="w-5 h-5 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+            </svg>
+          </button>
+        </div>
+        <p class="text-center text-xs text-slate-400 mt-2" data-t="privacyNote">All data stays local. CV text sent to Gemini only when you request AI analysis.</p>
+      </div>
+    </div><!-- /page-chat -->
+
+    <!-- ══ PAGE: CV CREATE ══════════════════════════════════════════════ -->
+    <div id="page-cv-create" class="page-section p-6 space-y-6">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
+        <div class="flex items-center gap-3">
+          <button onclick="showPage('chat')" class="text-slate-400 hover:text-slate-600">←</button>
+          <h2 class="text-xl font-bold text-slate-900" data-t="navCreate">Create CV</h2>
+        </div>
+        <!-- Saved CVs & Template Controls -->
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <select id="savedCvSelect" onchange="loadSelectedCV(this.value)" class="border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-slate-700">
+            <option value="">-- Saved CVs --</option>
+          </select>
+          <button onclick="resetCVForm()" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg font-semibold text-slate-700" data-t="btnNewCv">+ New CV</button>
+          <button onclick="deleteCurrentCV()" class="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg font-semibold" data-t="btnDeleteCv">🗑 Delete</button>
+          <select id="cvTemplate" onchange="livePreview()" class="border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-slate-700">
+            <option value="professional">Template: Professional</option>
+            <option value="modern">Template: Modern</option>
+            <option value="simple">Template: Simple ATS</option>
+          </select>
+          <select id="cvDocLang" onchange="livePreview()" class="border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-slate-700">
+            <option value="en">CV Lang: English (LTR)</option>
+            <option value="ar">CV Lang: العربية (RTL)</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <!-- Form -->
+        <div class="space-y-4">
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
+            <h3 class="font-bold text-sm text-slate-700" data-t="lblContact">Contact Info</h3>
+            <div class="grid grid-cols-2 gap-3 text-xs">
+              <div><label class="block text-slate-500 mb-1" data-t="lblFullName">Full Name</label><input id="cvName" oninput="livePreview()" class="w-full border border-slate-300 rounded-lg px-3 py-2"></div>
+              <div><label class="block text-slate-500 mb-1" data-t="lblTargetRole">Target Role</label><input id="cvTargetRole" oninput="livePreview()" class="w-full border border-slate-300 rounded-lg px-3 py-2" placeholder="e.g. Software Engineer"></div>
+              <div><label class="block text-slate-500 mb-1" data-t="lblEmail">Email</label><input id="cvEmail" oninput="livePreview()" class="w-full border border-slate-300 rounded-lg px-3 py-2"></div>
+              <div><label class="block text-slate-500 mb-1" data-t="lblPhone">Phone</label><input id="cvPhone" oninput="livePreview()" class="w-full border border-slate-300 rounded-lg px-3 py-2"></div>
+              <div><label class="block text-slate-500 mb-1" data-t="lblLocation">Location</label><input id="cvLocation" oninput="livePreview()" class="w-full border border-slate-300 rounded-lg px-3 py-2"></div>
+              <div><label class="block text-slate-500 mb-1" data-t="lblLinkedin">LinkedIn</label><input id="cvLinkedin" oninput="livePreview()" class="w-full border border-slate-300 rounded-lg px-3 py-2"></div>
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 space-y-2">
+            <div class="flex items-center justify-between">
+              <h3 class="font-bold text-sm text-slate-700" data-t="lblSummary">Professional Summary</h3>
+              <button onclick="generateAISummary()" class="text-xs px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-p-700 rounded-lg font-semibold border border-indigo-200" data-t="btnAiSummary">✨ AI Generate Summary</button>
+            </div>
+            <textarea id="cvSummary" rows="3" oninput="livePreview()" class="w-full text-xs border border-slate-300 rounded-lg px-3 py-2"></textarea>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
+            <h3 class="font-bold text-sm text-slate-700" data-t="lblExperience">Experience & Internships</h3>
+            <div id="expList" class="space-y-3 text-xs"></div>
+            <button onclick="addExp()" class="text-xs text-p-600 font-semibold" data-t="btnAddExp">+ Add Position</button>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
+            <h3 class="font-bold text-sm text-slate-700" data-t="lblEducation">Education</h3>
+            <div id="eduList" class="space-y-3 text-xs"></div>
+            <button onclick="addEdu()" class="text-xs text-p-600 font-semibold" data-t="btnAddEdu">+ Add Education</button>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
+            <h3 class="font-bold text-sm text-slate-700" data-t="lblProjects">Projects</h3>
+            <div id="projList" class="space-y-3 text-xs"></div>
+            <button onclick="addProj()" class="text-xs text-p-600 font-semibold" data-t="btnAddProj">+ Add Project</button>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 space-y-2">
+            <h3 class="font-bold text-sm text-slate-700" data-t="lblSkills">Skills (comma-separated)</h3>
+            <input id="cvSkills" oninput="livePreview()" class="w-full text-xs border border-slate-300 rounded-lg px-3 py-2" placeholder="Python, React, SQL, Agile…">
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 space-y-2">
+            <h3 class="font-bold text-sm text-slate-700" data-t="lblCerts">Certifications & Achievements (one per line)</h3>
+            <textarea id="cvCerts" rows="3" oninput="livePreview()" class="w-full text-xs border border-slate-300 rounded-lg px-3 py-2" placeholder="AWS Certified Cloud Practitioner&#10;1st Place National Data Hackathon"></textarea>
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <button onclick="saveCVDraft()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-semibold text-slate-700" data-t="btnSaveDraft">💾 Save Draft</button>
+            <button onclick="exportPDF()" class="px-4 py-2 bg-p-600 hover:bg-p-700 text-white rounded-xl text-xs font-semibold shadow">⬇ PDF</button>
+            <button onclick="exportDOCX()" class="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-p-700 border border-indigo-200 rounded-xl text-xs font-semibold">⬇ DOCX</button>
+          </div>
+        </div>
+        <!-- Live Preview -->
+        <div class="sticky top-4">
+          <div class="bg-slate-200 p-2 rounded-2xl shadow-inner border border-slate-300 overflow-x-auto">
+            <div id="cvPreviewPaper" class="bg-white rounded-xl p-8 text-slate-900 text-xs leading-relaxed" style="min-height:420px"></div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /cv-create -->
+
+    <!-- ══ PAGE: CV OPTIMIZE ════════════════════════════════════════════ -->
+    <div id="page-cv-opt" class="page-section p-6 space-y-6">
+      <div class="flex items-center gap-3"><button onclick="showPage('chat')" class="text-slate-400 hover:text-slate-600">←</button><h2 class="text-xl font-bold" data-t="navOpt">Optimize CV</h2></div>
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 space-y-4 max-w-3xl">
+        <p class="text-sm text-slate-600" data-t="optDesc">Upload, select a saved CV, or paste your CV. We'll suggest stronger phrasing — you can accept, reject, or edit each change individually before creating a revised CV.</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div>
+            <label class="block text-slate-500 mb-1" data-t="lblSelectSavedCv">Or Load a Saved CV</label>
+            <select id="optCvSelect" onchange="fillFromSavedCV(this.value, 'optCvText')" class="w-full border border-slate-300 rounded-lg px-3 py-2 bg-white">
+              <option value="">-- Select Saved CV --</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-500 mb-1" data-t="lblTargetRoleOpt">Target Role (Optional)</label>
+            <input id="optTargetRole" class="w-full border border-slate-300 rounded-lg px-3 py-2" placeholder="e.g. Senior Backend Engineer">
+          </div>
+        </div>
+        <textarea id="optCvText" rows="8" class="w-full text-xs border border-slate-300 rounded-xl p-3" placeholder="Paste CV text here…"></textarea>
+        <label class="block text-xs text-slate-500 cursor-pointer border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:border-p-500">
+          📎 <span data-t="lblUploadDoc">Or upload PDF / DOCX / TXT</span>
+          <input type="file" class="hidden" accept=".pdf,.docx,.doc,.txt" onchange="uploadAndFill(event,'optCvText')">
+        </label>
+        <button onclick="runOptimize()" class="px-5 py-2.5 bg-p-600 hover:bg-p-700 text-white rounded-xl text-xs font-bold shadow" data-t="btnAnalyzeOpt">Analyze & Optimize</button>
+      </div>
+      <div id="optResults" class="space-y-4 max-w-3xl"></div>
+    </div>
+
+    <!-- ══ PAGE: CV EVALUATE ════════════════════════════════════════════ -->
+    <div id="page-cv-eval" class="page-section p-6 space-y-6">
+      <div class="flex items-center gap-3"><button onclick="showPage('chat')" class="text-slate-400 hover:text-slate-600">←</button><h2 class="text-xl font-bold" data-t="navEval">Evaluate CV</h2></div>
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 space-y-4 max-w-3xl">
+        <div class="text-xs">
+          <label class="block text-slate-500 mb-1" data-t="lblSelectSavedCv">Or Load a Saved CV</label>
+          <select id="evalCvSelect" onchange="fillFromSavedCV(this.value, 'evalCvText')" class="w-full sm:w-64 border border-slate-300 rounded-lg px-3 py-2 bg-white">
+            <option value="">-- Select Saved CV --</option>
+          </select>
+        </div>
+        <textarea id="evalCvText" rows="8" class="w-full text-xs border border-slate-300 rounded-xl p-3" placeholder="Paste CV text…"></textarea>
+        <label class="block text-xs text-slate-500 cursor-pointer border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:border-p-500">
+          📎 <span data-t="lblUploadDoc">Or upload PDF / DOCX / TXT</span>
+          <input type="file" class="hidden" accept=".pdf,.docx,.doc,.txt" onchange="uploadAndFill(event,'evalCvText')">
+        </label>
+        <button onclick="runEvaluate()" class="px-5 py-2.5 bg-p-600 hover:bg-p-700 text-white rounded-xl text-xs font-bold shadow" data-t="btnEvaluate">Evaluate CV</button>
+      </div>
+      <div id="evalResults" class="space-y-4 max-w-3xl"></div>
+    </div>
+
+    <!-- ══ PAGE: JOB MATCH ═════════════════════════════════════════════ -->
+    <div id="page-job-match" class="page-section p-6 space-y-6">
+      <div class="flex items-center gap-3"><button onclick="showPage('chat')" class="text-slate-400 hover:text-slate-600">←</button><h2 class="text-xl font-bold" data-t="navMatch">Job Match</h2></div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-5xl">
+        <div class="bg-white rounded-2xl border p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-sm" data-t="lblYourCv">Your CV</h3>
+            <select id="matchCvSelect" onchange="fillFromSavedCV(this.value, 'matchCv')" class="text-xs border border-slate-300 rounded-lg px-2 py-1 bg-white">
+              <option value="">-- Saved CV --</option>
+            </select>
+          </div>
+          <textarea id="matchCv" rows="9" class="w-full text-xs border border-slate-300 rounded-xl p-3" placeholder="Paste CV…"></textarea>
+          <label class="block text-xs text-slate-500 cursor-pointer border border-dashed border-slate-300 rounded-xl p-2.5 text-center hover:border-p-500">
+            📎 <span data-t="lblUploadDoc">Upload PDF / DOCX / TXT</span>
+            <input type="file" class="hidden" accept=".pdf,.docx,.doc,.txt" onchange="uploadAndFill(event,'matchCv')">
+          </label>
+        </div>
+        <div class="bg-white rounded-2xl border p-5 space-y-3">
+          <h3 class="font-bold text-sm" data-t="lblJobDesc">Job Description</h3>
+          <textarea id="matchJob" rows="9" class="w-full text-xs border border-slate-300 rounded-xl p-3" placeholder="Paste job posting…"></textarea>
+          <label class="block text-xs text-slate-500 cursor-pointer border border-dashed border-slate-300 rounded-xl p-2.5 text-center hover:border-p-500">
+            📎 <span data-t="lblUploadDoc">Upload PDF / DOCX / TXT</span>
+            <input type="file" class="hidden" accept=".pdf,.docx,.doc,.txt" onchange="uploadAndFill(event,'matchJob')">
+          </label>
+        </div>
+      </div>
+      <button onclick="runMatch()" class="px-5 py-2.5 bg-p-600 hover:bg-p-700 text-white rounded-xl text-xs font-bold shadow max-w-5xl" data-t="btnMatch">Analyze Match</button>
+      <div id="matchResults" class="space-y-4 max-w-5xl"></div>
+    </div>
+
+    <!-- ══ PAGE: INTERVIEW ══════════════════════════════════════════════ -->
+    <div id="page-interview" class="page-section p-6 space-y-6">
+      <div class="flex items-center gap-3"><button onclick="showPage('chat')" class="text-slate-400 hover:text-slate-600">←</button><h2 class="text-xl font-bold" data-t="navInterview">Mock Interview</h2></div>
+      <div id="intSetup" class="bg-white rounded-2xl border p-6 space-y-4 max-w-xl">
+        <div class="grid grid-cols-2 gap-3 text-xs">
+          <div><label class="block text-slate-500 mb-1" data-t="lblTargetRole">Target Role</label><input id="intRole" class="w-full border border-slate-300 rounded-lg px-3 py-2" placeholder="e.g. Data Scientist"></div>
+          <div><label class="block text-slate-500 mb-1" data-t="lblIndustry">Industry</label><input id="intIndustry" class="w-full border border-slate-300 rounded-lg px-3 py-2" placeholder="e.g. FinTech, Healthcare"></div>
+          <div><label class="block text-slate-500 mb-1" data-t="lblIntType">Type</label>
+            <select id="intType" class="w-full border border-slate-300 rounded-lg px-3 py-2 bg-white">
+              <option value="behavioral">Behavioral</option><option value="technical">Technical</option>
+              <option value="hr">HR</option><option value="situational">Situational</option><option value="mixed">Mixed</option>
+            </select></div>
+          <div><label class="block text-slate-500 mb-1" data-t="lblDifficulty">Difficulty</label>
+            <select id="intDiff" class="w-full border border-slate-300 rounded-lg px-3 py-2 bg-white">
+              <option value="entry">Entry</option><option value="medium" selected>Mid-Level</option><option value="hard">Senior</option>
+            </select></div>
+          <div class="col-span-2">
+            <label class="block text-slate-500 mb-1" data-t="lblSelectSavedCv">Optional Saved CV</label>
+            <select id="intCvSelect" class="w-full border border-slate-300 rounded-lg px-3 py-2 bg-white">
+              <option value="">-- None --</option>
+            </select>
+          </div>
+          <div class="col-span-2">
+            <label class="block text-slate-500 mb-1" data-t="lblJobDescOpt">Optional Job Description</label>
+            <textarea id="intJobDesc" rows="2" class="w-full border border-slate-300 rounded-xl p-2" placeholder="Paste target job description (optional)…"></textarea>
+          </div>
+        </div>
+        <button onclick="startInterview()" class="w-full py-2.5 bg-p-600 hover:bg-p-700 text-white rounded-xl text-xs font-bold shadow" data-t="btnStartInt">Start Interview</button>
+      </div>
+      <div id="intChat" class="hidden space-y-4 max-w-2xl">
+        <div id="intStream" class="space-y-4"></div>
+        <div class="bg-white rounded-2xl border p-4 space-y-2">
+          <textarea id="intAnswer" rows="3" class="w-full text-xs border border-slate-300 rounded-xl p-3" placeholder="Type your answer (STAR: Situation, Task, Action, Result)…"></textarea>
+          <div class="flex flex-wrap gap-2">
+            <button id="btnSubmitIntAns" onclick="submitIntAnswer(false)" class="px-4 py-2 bg-p-600 hover:bg-p-700 text-white rounded-xl text-xs font-bold" data-t="btnSubmitAns">Submit Answer</button>
+            <button id="btnRetryIntQ" onclick="retryIntQuestion()" class="hidden px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-xl text-xs font-semibold" data-t="btnRetryQ">🔄 Retry Question</button>
+            <button id="btnNextIntQ" onclick="nextIntQuestion()" class="hidden px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold" data-t="btnNextQ">➡️ Next Question</button>
+            <button onclick="resetIntSetup()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-semibold" data-t="btnChangeSettings">⚙️ Settings</button>
+            <button onclick="endInterview()" class="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-p-700 border border-indigo-200 rounded-xl text-xs font-semibold" data-t="btnEndInt">🏆 End & Report</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: REJECTION ═════════════════════════════════════════════ -->
+    <div id="page-rejection" class="page-section p-6 space-y-6">
+      <div class="flex items-center gap-3"><button onclick="showPage('chat')" class="text-slate-400 hover:text-slate-600">←</button><h2 class="text-xl font-bold" data-t="navRej">Rejection Analysis</h2></div>
+      <div class="bg-white rounded-2xl border p-6 space-y-3 max-w-2xl text-xs">
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="block text-slate-500 mb-1" data-t="lblJobTitle">Job Title</label><input id="rejJob" class="w-full border border-slate-300 rounded-lg px-3 py-2"></div>
+          <div><label class="block text-slate-500 mb-1" data-t="lblCompany">Company</label><input id="rejCompany" class="w-full border border-slate-300 rounded-lg px-3 py-2"></div>
+        </div>
+        <div><label class="block text-slate-500 mb-1" data-t="lblAppDetails">Application & Interview Details</label><textarea id="rejDetails" rows="3" class="w-full border border-slate-300 rounded-xl p-3"></textarea></div>
+        <div><label class="block text-slate-500 mb-1" data-t="lblFeedbackRec">Feedback Received (if any)</label><textarea id="rejFeedback" rows="3" class="w-full border border-slate-300 rounded-xl p-3"></textarea></div>
+        <button onclick="runRejection()" class="px-5 py-2.5 bg-p-600 hover:bg-p-700 text-white rounded-xl text-xs font-bold shadow" data-t="btnAnalyzeRej">Analyze Rejection</button>
+      </div>
+      <div id="rejResults" class="space-y-4 max-w-2xl"></div>
+    </div>
+
+    <!-- ══ PAGE: OFFER ══════════════════════════════════════════════════ -->
+    <div id="page-offer" class="page-section p-6 space-y-6">
+      <div class="flex items-center gap-3"><button onclick="showPage('chat')" class="text-slate-400 hover:text-slate-600">←</button><h2 class="text-xl font-bold" data-t="navOffer">Offer Review</h2></div>
+      <div class="bg-white rounded-2xl border p-6 space-y-3 max-w-2xl text-xs">
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="block text-slate-500 mb-1" data-t="lblJobTitle">Role</label><input id="offRole" class="w-full border border-slate-300 rounded-lg px-3 py-2"></div>
+          <div><label class="block text-slate-500 mb-1" data-t="lblCompany">Company</label><input id="offCompany" class="w-full border border-slate-300 rounded-lg px-3 py-2"></div>
+        </div>
+        <div><label class="block text-slate-500 mb-1" data-t="lblOfferDetails">Offer Details (salary, equity, benefits, clauses…)</label><textarea id="offDetails" rows="5" class="w-full border border-slate-300 rounded-xl p-3"></textarea></div>
+        <label class="block text-xs text-slate-500 cursor-pointer border border-dashed border-slate-300 rounded-xl p-3 text-center hover:border-p-500">
+          📎 <span data-t="lblUploadOffer">Or upload Offer Letter (PDF / DOCX / TXT)</span>
+          <input type="file" class="hidden" accept=".pdf,.docx,.doc,.txt" onchange="uploadAndFill(event,'offDetails')">
+        </label>
+        <div><label class="block text-slate-500 mb-1" data-t="lblPriorities">Your Priorities</label><input id="offPriorities" class="w-full border border-slate-300 rounded-lg px-3 py-2" placeholder="e.g. Base salary, remote flexibility, signing bonus"></div>
+        <button onclick="runOffer()" class="px-5 py-2.5 bg-p-600 hover:bg-p-700 text-white rounded-xl text-xs font-bold shadow" data-t="btnReviewOffer">Review Offer</button>
+      </div>
+      <div id="offerResults" class="space-y-4 max-w-2xl"></div>
+    </div>
+
+  </main><!-- /main -->
+</div><!-- /body flex -->
+
+<!-- Toast -->
+<div id="toastBox" class="fixed bottom-5 right-5 rtl:right-auto rtl:left-5 z-50 space-y-2 pointer-events-none"></div>
+
+<!-- AI Info modal -->
+<div id="aiModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+    <div class="flex justify-between items-center">
+      <h3 class="font-bold text-slate-900">AI Configuration</h3>
+      <button onclick="document.getElementById('aiModal').classList.add('hidden')" class="text-slate-400">✕</button>
+    </div>
+    <div id="aiModalBody" class="text-sm text-slate-600 space-y-2"></div>
+    <p class="text-xs text-slate-400">To change: edit <code>.env.local</code> then restart <code>start.bat</code></p>
+    <button onclick="document.getElementById('aiModal').classList.add('hidden')" class="w-full py-2 bg-p-600 text-white rounded-xl text-sm font-semibold">Close</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+const S = {
+  lang: localStorage.getItem('cc_lang') || 'en',
+  convId: null,
+  aiAvailable: false,
+  aiModel: '',
+  uploading: false,
+  attachedText: '',
+  attachedName: '',
+  // interview state (service page)
+  intSessionId: null,
+  intQaId: null,
+  intQuestion: '',
+  intNum: 0,
+  // cv builder arrays
+  experiences: [],
+  educations: [],
+  projects: [],
+  savedCvId: null,
+  savedCvsCache: [],
+  optOriginalCvText: '',
+  optSuggestions: []
+};
+
+// ═══════════════════════════════════════════════════════════════
+// TRANSLATIONS
+// ═══════════════════════════════════════════════════════════════
+const TR = {
+  en: {
+    navChat:'Chat', navCreate:'Create CV', navOpt:'Optimize', navEval:'Evaluate',
+    navMatch:'Job Match', navInterview:'Interview', navRej:'Rejection', navOffer:'Offer Review',
+    sideHistory:'Conversations', newChat:'+ New', noHistory:'No chats yet',
+    chatPlaceholder:'Ask anything about your career…',
+    privacyNote:'All data stays local. CV text sent to Gemini only when you request AI analysis.',
+    welcomeTitle:'AI Career Coach',
+    welcomeSub:'Your personal AI-powered career advisor',
+    welcomeSub2:'يتحدث العربية والإنجليزية بطلاقة',
+    aiConnected:'AI Connected',
+    lblContact:'Contact Information', lblFullName:'Full Name *', lblTargetRole:'Target Job Title',
+    lblEmail:'Email *', lblPhone:'Phone', lblLocation:'Location', lblLinkedin:'LinkedIn / Portfolio',
+    lblSummary:'Professional Summary', btnAiSummary:'✨ AI Generate Summary',
+    lblExperience:'Work Experience', btnAddExp:'+ Add Role',
+    lblEducation:'Education', btnAddEdu:'+ Add Education',
+    lblProjects:'Projects', btnAddProj:'+ Add Project',
+    lblSkills:'Skills (comma-separated)', lblCerts:'Certifications & Achievements (one per line)',
+    btnSaveDraft:'💾 Save Draft', btnNewCv:'+ New CV', btnDeleteCv:'🗑 Delete',
+    optDesc:'Improve phrasing, clarity, and impact using real facts only — no fabricated metrics.',
+    lblSelectSavedCv:'Load Saved CV:', lblTargetRoleOpt:'Target Job Role (Optional):',
+    lblUploadDoc:'Or upload PDF/DOCX:', btnAnalyzeOpt:'Analyze & Suggest Improvements',
+    btnEvaluate:'Evaluate CV', lblYourCv:'Your CV', lblJobDesc:'Job Description',
+    btnMatch:'Compare CV to Job', lblIndustry:'Industry / Field', lblIntType:'Interview Type',
+    lblDifficulty:'Difficulty', lblJobDescOpt:'Job Description (Optional)',
+    btnStartInt:'Start Session', btnSubmitAns:'Submit Answer', btnRetryQ:'🔄 Retry Question',
+    btnNextQ:'➡️ Next Question', btnChangeSettings:'⚙️ Settings', btnEndInt:'End & Report',
+    lblJobTitle:'Job Title *', lblCompany:'Company', lblAppDetails:'Application / Interview Details',
+    lblFeedbackRec:'Feedback Received (if any)', btnAnalyzeRej:'Analyze & Create Action Plan',
+    lblOfferDetails:'Offer Details (or paste contract text) *', lblUploadOffer:'Or upload offer letter:',
+    lblPriorities:'Your Priorities', btnReviewOffer:'Review Offer & Generate Negotiation Guide',
+    suggests:[
+      {icon:'📄', label:'Create a CV', prompt:'I want to create a professional CV for a Software Engineer position.'},
+      {icon:'📊', label:'Evaluate my CV', prompt:'Evaluate my CV and give me detailed feedback.'},
+      {icon:'✏️', label:'Optimize phrasing', prompt:'Help me optimize the phrasing of my CV.'},
+      {icon:'🔍', label:'Match to job', prompt:'Match my CV against a job description.'},
+      {icon:'🎤', label:'Mock interview', prompt:'Practice a behavioral mock interview with me for a Data Analyst role.'},
+      {icon:'💔', label:'Analyze rejection', prompt:'I got rejected after a final interview. Help me understand why and improve.'},
+      {icon:'💼', label:'Review offer', prompt:'I received a job offer. Help me analyze it and negotiate.'},
+      {icon:'❓', label:'Career advice', prompt:'What skills should I develop to transition into product management?'}
+    ]
+  },
+  ar: {
+    navChat:'المحادثة', navCreate:'إنشاء سيرة', navOpt:'تحسين', navEval:'تقييم',
+    navMatch:'مطابقة وظيفة', navInterview:'مقابلة', navRej:'تحليل رفض', navOffer:'مراجعة عرض',
+    sideHistory:'المحادثات', newChat:'+ جديدة', noHistory:'لا توجد محادثات',
+    chatPlaceholder:'اسألني عن مسيرتك المهنية…',
+    privacyNote:'جميع بياناتك محلية. يُرسل نص السيرة لـ Gemini فقط عند طلب التحليل.',
+    welcomeTitle:'مدرب المسار المهني الذكي',
+    welcomeSub:'مستشارك المهني الشخصي المدعوم بالذكاء الاصطناعي',
+    welcomeSub2:'AI Career Coach — Speaks Arabic & English',
+    aiConnected:'الذكاء الاصطناعي متصل',
+    lblContact:'معلومات التواصل', lblFullName:'الاسم الكامل *', lblTargetRole:'المسمى الوظيفي المستهدف',
+    lblEmail:'البريد الإلكتروني *', lblPhone:'رقم الهاتف', lblLocation:'الموقع', lblLinkedin:'لينكدإن / معرض الأعمال',
+    lblSummary:'الملخص المهني', btnAiSummary:'✨ توليد ملخص بالذكاء الاصطناعي',
+    lblExperience:'الخبرات العملية', btnAddExp:'+ إضافة خبرة',
+    lblEducation:'التعليم', btnAddEdu:'+ إضافة مؤهل',
+    lblProjects:'المشاريع', btnAddProj:'+ إضافة مشروع',
+    lblSkills:'المهارات (مفصولة بفواصل)', lblCerts:'الشهادات والإنجازات (كل شهادة في سطر)',
+    btnSaveDraft:'💾 حفظ المسودة', btnNewCv:'+ سيرة جديدة', btnDeleteCv:'🗑 حذف',
+    optDesc:'تحسين الصياغة والوضوح والتأثير بالاعتماد على معلوماتك الحقيقية فقط دون اختلاق أرقام.',
+    lblSelectSavedCv:'اختر سيرة محفوظة:', lblTargetRoleOpt:'المسمى الوظيفي المستهدف (اختياري):',
+    lblUploadDoc:'أو ارفع ملف PDF/DOCX:', btnAnalyzeOpt:'تحليل واقتراح التحسينات',
+    btnEvaluate:'تقييم السيرة الذاتية', lblYourCv:'سيرتك الذاتية', lblJobDesc:'الوصف الوظيفي',
+    btnMatch:'مقارنة السيرة بالوظيفة', lblIndustry:'المجال / القطاع', lblIntType:'نوع المقابلة',
+    lblDifficulty:'مستوى الصعوبة', lblJobDescOpt:'الوصف الوظيفي (اختياري)',
+    btnStartInt:'بدء الجلسة', btnSubmitAns:'إرسال الإجابة', btnRetryQ:'🔄 إعادة المحاولة',
+    btnNextQ:'➡️ السؤال التالي', btnChangeSettings:'⚙️ الإعدادات', btnEndInt:'إنهاء وتقرير الأداء',
+    lblJobTitle:'المسمى الوظيفي *', lblCompany:'الشركة', lblAppDetails:'تفاصيل التقديم / المقابلة',
+    lblFeedbackRec:'الملاحظات المستلمة (إن وجدت)', btnAnalyzeRej:'تحليل وبناء خطة التحسين',
+    lblOfferDetails:'تفاصيل العرض الوظيفي (أو نص العقد) *', lblUploadOffer:'أو ارفع ملف العرض الوظيفي:',
+    lblPriorities:'أولوياتك المهنية', btnReviewOffer:'مراجعة العرض وإعداد دليل التفاوض',
+    suggests:[
+      {icon:'📄', label:'إنشاء سيرة ذاتية', prompt:'عايز أعمل CV لوظيفة Software Engineer.'},
+      {icon:'📊', label:'تقييم السيرة الذاتية', prompt:'قيّم سيرتي الذاتية وأعطيني تقرير تفصيلي.'},
+      {icon:'✏️', label:'تحسين الصياغة', prompt:'ساعدني أحسّن صياغة الـ CV بتاعتي.'},
+      {icon:'🔍', label:'مطابقة وظيفة', prompt:'طابق سيرتي الذاتية مع الوصف الوظيفي ده.'},
+      {icon:'🎤', label:'مقابلة تجريبية', prompt:'درّبني على مقابلة behavioral لوظيفة Data Analyst.'},
+      {icon:'💔', label:'تحليل رفض', prompt:'اترفضت بعد المقابلة النهائية. ساعدني أفهم ليه وأتحسن.'},
+      {icon:'💼', label:'مراجعة عرض وظيفي', prompt:'وصلني عرض وظيفي. ساعدني أحلله وأتفاوض عليه.'},
+      {icon:'❓', label:'نصيحة مهنية', prompt:'إيه المهارات اللي أطورها عشان أنتقل لمجال Product Management?'}
+    ]
+  }
+};
+
+function t(k){ return (TR[S.lang]||TR.en)[k] || (TR.en)[k] || k; }
+
+function applyTranslations(){
+  document.documentElement.lang = S.lang;
+  document.documentElement.dir  = S.lang==='ar' ? 'rtl' : 'ltr';
+  document.querySelectorAll('[data-t]').forEach(el=>{
+    const v = t(el.getAttribute('data-t'));
+    if(v) el.textContent = v;
+  });
+  document.querySelectorAll('[data-t-placeholder]').forEach(el=>{
+    el.placeholder = t(el.getAttribute('data-t-placeholder'));
+  });
+  document.getElementById('langBtn').textContent = S.lang==='ar' ? 'EN' : 'ع';
+  document.getElementById('welcomeTitle').textContent = t('welcomeTitle');
+  document.getElementById('welcomeSub').textContent   = t('welcomeSub');
+  document.getElementById('welcomeSub2').textContent  = t('welcomeSub2');
+  buildSuggestGrid();
+}
+
+function toggleLang(){
+  S.lang = S.lang==='en' ? 'ar' : 'en';
+  localStorage.setItem('cc_lang', S.lang);
+  applyTranslations();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PAGE ROUTING
+// ═══════════════════════════════════════════════════════════════
+function showPage(page){
+  document.querySelectorAll('.page-section').forEach(el=>el.classList.remove('active'));
+  const el = document.getElementById('page-'+page);
+  if(el) el.classList.add('active');
+  // highlight nav
+  document.querySelectorAll('.nav-btn').forEach(b=>{
+    b.classList.toggle('bg-p-50', b.dataset.page===page);
+    b.classList.toggle('text-p-700', b.dataset.page===page);
+    b.classList.toggle('font-bold',  b.dataset.page===page);
+  });
+  // specific page init
+  if(['cv-create','cv-opt','cv-eval','job-match','interview'].includes(page)){
+    loadSavedCVsList();
+  }
+  if(page==='cv-create') livePreview();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// API HELPER
+// ═══════════════════════════════════════════════════════════════
+async function api(url, method='GET', data=null, isForm=false){
+  try{
+    const opts={method, headers:{}};
+    if(data){
+      if(isForm){ opts.body=data; }
+      else{ opts.headers['Content-Type']='application/json'; opts.body=JSON.stringify(data); }
+    }
+    const res = await fetch('/api'+url, opts);
+    const json= await res.json();
+    return {ok:res.ok, status:res.status, data:json};
+  }catch(e){ return {ok:false, error:e.message, data:{}}; }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TOASTS
+// ═══════════════════════════════════════════════════════════════
+function toast(msg, type='info'){
+  const box=document.getElementById('toastBox');
+  const el=document.createElement('div');
+  const col=type==='success'?'bg-emerald-600':type==='error'?'bg-red-600':'bg-slate-800';
+  el.className=`${col} text-white text-xs px-4 py-2.5 rounded-xl shadow-lg pointer-events-auto max-w-xs transition-opacity`;
+  el.textContent=msg; box.appendChild(el);
+  setTimeout(()=>el.remove(),3500);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AI STATUS
+// ═══════════════════════════════════════════════════════════════
+async function checkStatus(){
+  const r = await api('/status');
+  if(r.ok && r.data){
+    S.aiAvailable = r.data.ai_available;
+    S.aiModel     = r.data.ai_model || '';
+    const dot  = document.getElementById('aiDotInner');
+    const label= document.getElementById('aiDotLabel');
+    const badge= document.getElementById('aiDot');
+    if(S.aiAvailable){
+      dot.className='w-2 h-2 rounded-full bg-emerald-400';
+      label.textContent=S.aiModel||t('aiConnected');
+      badge.className='flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-800 cursor-pointer';
+    } else {
+      label.textContent='AI Setup';
+    }
+  }
+}
+
+function showAIInfo(){
+  const body=document.getElementById('aiModalBody');
+  body.innerHTML = S.aiAvailable
+    ? `<div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800">✅ Connected — Model: <strong>${S.aiModel}</strong></div>`
+    : `<div class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800">⚠️ AI not configured. Add <code>AI_API_KEY</code> to <code>.env.local</code> and restart.</div>`;
+  document.getElementById('aiModal').classList.remove('hidden');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SIDEBAR & CONVERSATIONS
+// ═══════════════════════════════════════════════════════════════
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('hidden');
+}
+
+async function loadConversations(){
+  const r = await api('/chat/conversations');
+  if(!r.ok) return;
+  const list = document.getElementById('convList');
+  const convs = r.data;
+  if(!convs || !convs.length){
+    list.innerHTML=`<p class="text-slate-400 text-center mt-4 text-xs" data-t="noHistory">${t('noHistory')}</p>`;
+    return;
+  }
+  list.innerHTML = convs.map(c=>`
+    <div class="sidebar-conv rounded-lg px-3 py-2 cursor-pointer flex items-center justify-between gap-1 text-xs text-slate-700 ${c.id===S.convId?'active':''}"
+         onclick="loadConversation('${c.id}')">
+      <span class="truncate flex-1">${c.title||'Chat'}</span>
+      <button onclick="event.stopPropagation();deleteConv('${c.id}')" class="text-slate-300 hover:text-red-500 text-[10px] flex-shrink-0">✕</button>
+    </div>`).join('');
+}
+
+async function loadConversation(id){
+  S.convId = id;
+  showPage('chat');
+  const r = await api(`/chat/conversations/${id}`);
+  if(!r.ok) return;
+  const msgs = r.data.messages || [];
+  document.getElementById('welcomeScreen').classList.add('hidden');
+  document.getElementById('chatMessages').classList.remove('hidden');
+  document.getElementById('chatMessages').innerHTML='';
+  msgs.forEach(m=>{
+    if(m.role==='user') appendUserBubble(m.content);
+    else if(m.role==='assistant') appendBotBubble(m.content, m.tool_results||[]);
+  });
+  scrollChat();
+  loadConversations();
+}
+
+async function deleteConv(id){
+  const msg = S.lang==='ar' ? 'هل تريد حذف هذه المحادثة؟' : 'Delete this conversation?';
+  if(!confirm(msg)) return;
+  await api(`/chat/conversations/${id}`, 'DELETE');
+  if(id===S.convId){ newConversation(); }
+  loadConversations();
+}
+
+function newConversation(){
+  S.convId = null;
+  S.attachedText='';S.attachedName='';
+  document.getElementById('chatMessages').innerHTML='';
+  document.getElementById('chatMessages').classList.add('hidden');
+  document.getElementById('welcomeScreen').classList.remove('hidden');
+  document.getElementById('uploadStrip').classList.add('hidden');
+  showPage('chat');
+  loadConversations();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SUGGEST GRID
+// ═══════════════════════════════════════════════════════════════
+function buildSuggestGrid(){
+  const grid=document.getElementById('suggestGrid');
+  const items=t('suggests')||[];
+  grid.innerHTML=items.map(s=>`
+    <button onclick="quickPrompt(\`${s.prompt.replace(/`/g,"'")}\`)"
+      class="bg-white border border-slate-200 rounded-xl p-3 text-left rtl:text-right hover:border-p-400 hover:bg-p-50 transition-all space-y-1 shadow-sm">
+      <span class="text-lg">${s.icon}</span>
+      <p class="text-xs font-semibold text-slate-700">${s.label}</p>
+    </button>`).join('');
+}
+
+function quickPrompt(text){
+  document.getElementById('chatInput').value=text;
+  sendMessage();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FILE ATTACH (chat)
+// ═══════════════════════════════════════════════════════════════
+async function handleFileAttach(e){
+  const file=e.target.files[0]; if(!file) return;
+  toast(`Uploading ${file.name}…`);
+  const fd=new FormData(); fd.append('file',file); fd.append('purpose','chat_cv');
+  const r=await api('/upload','POST',fd,true);
+  if(r.ok && r.data.extracted_text){
+    S.attachedText=r.data.extracted_text;
+    S.attachedName=file.name;
+    document.getElementById('uploadStrip').classList.remove('hidden');
+    document.getElementById('uploadStripName').textContent=file.name;
+    toast(`Extracted ${r.data.extracted_text.length} chars from ${file.name}`, 'success');
+  } else {
+    toast('Upload failed: '+(r.data.error||'unknown'), 'error');
+  }
+  e.target.value='';
+}
+
+function clearUpload(){
+  S.attachedText=''; S.attachedName='';
+  document.getElementById('uploadStrip').classList.add('hidden');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SEND MESSAGE  —  Streaming version
+// ═══════════════════════════════════════════════════════════════
+async function sendMessage(){
+  const input=document.getElementById('chatInput');
+  let text=input.value.trim();
+  if(!text && !S.attachedText) return;
+
+  // Prepend extracted file text if present
+  if(S.attachedText){
+    text = (text ? text+'\n\n' : '') + `[Attached CV: ${S.attachedName}]\n${S.attachedText}`;
+    clearUpload();
+  }
+
+  input.value=''; autoResize(input);
+
+  // Show welcome→chat transition
+  document.getElementById('welcomeScreen').classList.add('hidden');
+  document.getElementById('chatMessages').classList.remove('hidden');
+
+  appendUserBubble(text);
+  showTyping();
+  setInput(false);
+
+  // Generate a conv ID if new
+  if(!S.convId) S.convId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+
+  // ── Streaming fetch ──────────────────────────────────────────
+  let botBubbleEl   = null;   // the message container div
+  let textBubbleEl  = null;   // the inner text bubble
+  let fullText      = '';
+  let toolResultsArr = [];
+  let typingRemoved = false;
+
+  function ensureBubble(){
+    if(botBubbleEl) return;
+    removeTyping();
+    typingRemoved = true;
+
+    const msgs = document.getElementById('chatMessages');
+    botBubbleEl = document.createElement('div');
+    botBubbleEl.className = 'msg-assistant flex items-start gap-3';
+
+    textBubbleEl = document.createElement('div');
+    textBubbleEl.className = 'bubble px-4 py-3 text-sm max-w-[90%] leading-relaxed';
+
+    const avatar = `<div class="w-8 h-8 rounded-xl bg-gradient-to-br from-p-700 to-indigo-400 text-white text-xs flex items-center justify-center flex-shrink-0 mt-1">🎯</div>`;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'flex-1 min-w-0';
+    wrapper.appendChild(textBubbleEl);
+
+    botBubbleEl.innerHTML = avatar;
+    botBubbleEl.appendChild(wrapper);
+    msgs.appendChild(botBubbleEl);
+  }
+
+  try {
+    const resp = await fetch('/api/chat/stream', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({conversation_id: S.convId, message: text, language: S.lang})
+    });
+
+    if(!resp.ok){
+      removeTyping();
+      appendBotBubble('⚠️ Server error '+resp.status, []);
+      setInput(true);
+      return;
+    }
+
+    const reader  = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let   buffer  = '';
+
+    while(true){
+      const {done, value} = await reader.read();
+      if(done) break;
+
+      buffer += decoder.decode(value, {stream: true});
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // keep incomplete line in buffer
+
+      for(const line of lines){
+        const trimmed = line.trim();
+        if(!trimmed) continue;
+        let event;
+        try { event = JSON.parse(trimmed); } catch{ continue; }
+
+        if(event.type === 'conv_id'){
+          S.convId = event.conversation_id;
+
+        } else if(event.type === 'thinking'){
+          // Show "running tools" indicator in typing bubble
+          const tyEl = document.getElementById('typingIndicator');
+          if(tyEl) tyEl.querySelector('.bubble').innerHTML =
+            `<span class="text-xs text-slate-500">⚙️ Running tools…</span>`;
+
+        } else if(event.type === 'tool'){
+          // Collect tool result — will render after stream
+          toolResultsArr.push({name: event.name, result: event.result});
+
+        } else if(event.type === 'token'){
+          ensureBubble();
+          fullText += event.text;
+          textBubbleEl.innerHTML = formatMarkdown(fullText);
+          scrollChat();
+
+        } else if(event.type === 'done'){
+          // Stream finished — append tool cards if any
+          if(toolResultsArr.length){
+            ensureBubble();
+            const toolHtml = toolResultsArr.map(tr=>renderToolResult(tr)).join('');
+            if(toolHtml){
+              const toolDiv = document.createElement('div');
+              toolDiv.innerHTML = toolHtml;
+              botBubbleEl.querySelector('.flex-1').appendChild(toolDiv);
+            }
+            if(!fullText){
+              textBubbleEl.innerHTML = formatMarkdown(S.lang==='ar' ? "تمت معالجة طلبك بنجاح:" : "Here are your results:");
+            }
+          }
+          if(!botBubbleEl && toolResultsArr.length){
+            ensureBubble();
+          }
+
+        } else if(event.type === 'error'){
+          ensureBubble();
+          textBubbleEl.innerHTML = `<span class="text-red-600">⚠️ ${esc(event.text||'Unknown error')}</span>`;
+        }
+      }
+    }
+  } catch(err){
+    removeTyping();
+    appendBotBubble('⚠️ Connection error. Is the server running?', []);
+  }
+
+  if(!typingRemoved) removeTyping();
+  // If no bubble was created at all (edge case), show fallback
+  if(!botBubbleEl){
+    const fallbackMsg = fullText || (toolResultsArr.length
+      ? (S.lang==='ar' ? 'تمت معالجة طلبك بنجاح:' : 'Here are your results:')
+      : (S.lang==='ar' ? 'لم يتم استلام رد، يرجى المحاولة مرة أخرى.' : 'No response received. Please try again.'));
+    appendBotBubble(fallbackMsg, toolResultsArr);
+  }
+
+  scrollChat();
+  setInput(true);
+  loadConversations();
+}
+
+function handleKey(e){
+  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }
+}
+
+function autoResize(el){
+  el.style.height='auto';
+  el.style.height=Math.min(el.scrollHeight,128)+'px';
+}
+
+function setInput(enabled){
+  document.getElementById('sendBtn').disabled=!enabled;
+  document.getElementById('chatInput').disabled=!enabled;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CHAT BUBBLES
+// ═══════════════════════════════════════════════════════════════
+function appendUserBubble(text){
+  const msgs=document.getElementById('chatMessages');
+  const d=document.createElement('div');
+  d.className='msg-user flex justify-end';
+  // Truncate display if very long (file content)
+  const display = text.length>600 ? text.slice(0,300)+'…\n[full text sent to AI]' : text;
+  d.innerHTML=`<div class="bubble px-4 py-3 text-sm max-w-[80%] whitespace-pre-wrap">${esc(display)}</div>`;
+  msgs.appendChild(d);
+  scrollChat();
+}
+
+function appendBotBubble(text, toolResults){
+  const msgs=document.getElementById('chatMessages');
+  const d=document.createElement('div');
+  d.className='msg-assistant flex items-start gap-3';
+
+  const avatar=`<div class="w-8 h-8 rounded-xl bg-gradient-to-br from-p-700 to-indigo-400 text-white text-xs flex items-center justify-center flex-shrink-0 mt-1">🎯</div>`;
+
+  // Render tool results as cards
+  let toolHtml='';
+  if(toolResults && toolResults.length){
+    toolHtml = toolResults.map(tr=>renderToolResult(tr)).join('');
+  }
+
+  d.innerHTML=`${avatar}<div class="flex-1 min-w-0">
+    <div class="bubble px-4 py-3 text-sm max-w-[90%] leading-relaxed">${formatMarkdown(text)}</div>
+    ${toolHtml}
+  </div>`;
+  msgs.appendChild(d);
+  scrollChat();
+}
+
+function showTyping(){
+  const msgs=document.getElementById('chatMessages');
+  const d=document.createElement('div');
+  d.id='typingIndicator'; d.className='msg-assistant flex items-start gap-3';
+  d.innerHTML=`<div class="w-8 h-8 rounded-xl bg-gradient-to-br from-p-700 to-indigo-400 text-white text-xs flex items-center justify-center flex-shrink-0">🎯</div>
+    <div class="bubble px-4 py-3 flex gap-1.5 items-center">
+      <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+    </div>`;
+  msgs.appendChild(d); scrollChat();
+}
+
+function removeTyping(){
+  document.getElementById('typingIndicator')?.remove();
+}
+
+function scrollChat(){
+  const el=document.getElementById('chatMessages');
+  el.scrollTop=el.scrollHeight;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TOOL RESULT RENDERING (inside chat)
+// ═══════════════════════════════════════════════════════════════
+function renderToolResult(tr){
+  const name=tr.name;
+  const result=tr.result||{};
+
+  if(name==='evaluate_cv' && result.data){
+    return renderEvalCard(result.data);
+  }
+  if(name==='optimize_cv' && result.data){
+    return renderOptCard(result.data, result.session_id, result.original_cv_text);
+  }
+  if(name==='create_cv' && result.cv_id){
+    return `<div class="tool-card mt-2">
+      <p class="font-bold text-emerald-700 text-xs">✅ CV Created (ID: ${result.cv_id})</p>
+      <p class="text-xs text-slate-500 mt-1">Go to <button onclick="openCreatedCV(${result.cv_id})" class="text-p-600 underline font-semibold">Create CV</button> page to preview, edit, and export as PDF/DOCX.</p>
+    </div>`;
+  }
+  if(name==='match_job' && result.data){
+    return renderMatchCard(result.data);
+  }
+  if(name==='start_interview' && result.session_id){
+    S.intSessionId=result.session_id; S.intQaId=result.qa_id; S.intQuestion=result.question; S.intNum=1;
+    return renderInterviewQuestion(result.question, 1, result.tip);
+  }
+  if(name==='submit_interview_answer' && result.evaluation){
+    return renderAnswerEval(result);
+  }
+  if(name==='end_interview' && result.data){
+    return renderInterviewReportCard(result.data);
+  }
+  if(name==='analyze_rejection' && result.data){
+    return renderRejectionCard(result.data);
+  }
+  if(name==='review_offer' && result.data){
+    return renderOfferCard(result.data);
+  }
+  if(result.error){
+    return `<div class="tool-card border-red-200 bg-red-50 text-xs text-red-700">⚠️ ${esc(result.error)}</div>`;
+  }
+  return '';
+}
+
+function renderEvalCard(d){
+  const scores=d.scores||{};
+  const avg=Object.values(scores).reduce((a,v)=>a+(v.score||0),0)/Math.max(Object.keys(scores).length,1);
+  return `<div class="tool-card space-y-3">
+    <div class="flex justify-between items-center">
+      <span class="font-bold text-sm text-slate-800">📊 CV Evaluation Report</span>
+      <span class="text-lg font-black text-p-600">${avg.toFixed(1)}<span class="text-xs text-slate-400">/10</span></span>
+    </div>
+    <p class="text-xs text-slate-600">${esc(d.overall_assessment||'')}</p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+      ${Object.entries(scores).map(([k,v])=>`
+        <div class="p-2 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+          <div class="flex justify-between text-[10px] font-bold text-slate-700"><span class="capitalize">${k.replace(/_/g,' ')}</span><span class="${v.score>=8?'text-emerald-600':v.score>=6?'text-amber-600':'text-red-600'}">${v.score}/10</span></div>
+          <div class="score-bar"><div class="score-fill ${v.score>=8?'bg-emerald-500':v.score>=6?'bg-amber-400':'bg-red-400'}" style="width:${v.score*10}%"></div></div>
+          ${v.explanation?`<p class="text-[10px] text-slate-500 leading-snug">${esc(v.explanation)}</p>`:''}
+        </div>`).join('')}
+    </div>
+    ${d.strengths?.length?`<div><p class="text-[10px] font-bold text-emerald-700 mb-1">✓ Strengths</p>${d.strengths.map(s=>`<p class="text-xs text-slate-700">✓ ${esc(s)}</p>`).join('')}</div>`:''}
+    ${d.weaknesses?.length?`<div><p class="text-[10px] font-bold text-amber-700 mb-1">⚠ Areas to Improve</p>${d.weaknesses.map(w=>`<p class="text-xs text-slate-700">⚠ ${esc(w)}</p>`).join('')}</div>`:''}
+    ${d.improvements?.length?`<div class="space-y-1.5"><p class="text-[10px] font-bold text-p-700">🎯 Prioritized Action Items</p>${d.improvements.map(imp=>`
+      <div class="p-2 bg-white border border-slate-200 rounded-lg text-xs">
+        <div class="flex items-center gap-1.5">
+          <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${imp.priority==='high'?'bg-red-100 text-red-800':imp.priority==='medium'?'bg-amber-100 text-amber-800':'bg-blue-100 text-blue-800'}">${esc(imp.priority||'medium')}</span>
+          <span class="font-bold text-slate-800">${esc(imp.area||'Section')}</span>
+        </div>
+        <p class="text-slate-700 mt-1">${esc(imp.suggestion||'')}</p>
+        ${imp.reasoning?`<p class="text-[10px] text-slate-400 mt-0.5">${esc(imp.reasoning)}</p>`:''}
+      </div>`).join('')}</div>`:''}
+    ${d.missing_sections?.length?`<div><p class="text-[10px] font-bold text-slate-600 mb-1">📌 Missing / Optional Sections</p><div class="flex flex-wrap gap-1">${d.missing_sections.map(m=>`<span class="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[10px] text-slate-700">${esc(m)}</span>`).join('')}</div></div>`:''}
+    <p class="text-[10px] text-slate-400 italic">${esc(d.disclaimer||'Scores are qualitative heuristics, not ATS predictions.')}</p>
+  </div>`;
+}
+
+function renderOptCard(d, sessionId='', origText=''){
+  const sug=d.suggestions||[];
+  S.optSuggestions = sug;
+  if(origText) S.optOriginalCvText = origText;
+  const uid = sessionId || ('s'+Math.random().toString(36).slice(2,7));
+  return `<div class="tool-card space-y-3" data-opt-session="${esc(uid)}">
+    <div class="flex justify-between items-center flex-wrap gap-2">
+      <span class="font-bold text-sm text-slate-800">✏️ Optimization Suggestions (${sug.length})</span>
+      <button onclick="applyOptimizations('${esc(uid)}')" class="px-3 py-1 bg-p-600 hover:bg-p-700 text-white rounded-lg text-xs font-semibold">✨ Apply Accepted Changes</button>
+    </div>
+    ${d.general_notes?`<p class="text-xs text-slate-500">${esc(d.general_notes)}</p>`:''}
+    ${sug.map((s,i)=>`
+      <div id="sug_${uid}_${i}" data-sug-idx="${i}" data-sug-id="${s.id||''}" data-sug-status="${s.status||'pending'}" class="border border-slate-200 rounded-xl p-3 space-y-2 text-xs bg-white">
+        <div class="flex justify-between items-center">
+          <span class="text-[10px] font-bold uppercase text-slate-500">${esc(s.section||'General')}</span>
+          <span id="sug_badge_${uid}_${i}" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold">${esc(s.status||'pending')}</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div class="p-2 bg-red-50 rounded-lg border border-red-100"><span class="text-[10px] font-bold text-red-700 block">Original</span><p class="text-slate-700 mt-1" id="sug_orig_${uid}_${i}">${esc(s.original)}</p></div>
+          <div class="p-2 bg-emerald-50 rounded-lg border border-emerald-100"><span class="text-[10px] font-bold text-emerald-700 block">Suggested</span><p class="text-slate-700 mt-1" id="sug_text_${uid}_${i}">${esc(s.suggested)}</p></div>
+        </div>
+        <div id="sug_editbox_${uid}_${i}" class="hidden space-y-1.5">
+          <textarea id="sug_input_${uid}_${i}" rows="2" class="w-full border border-p-300 rounded-lg p-2 text-xs">${esc(s.suggested)}</textarea>
+          <button onclick="saveEditSug('${esc(uid)}',${i},'${s.id||''}')" class="px-2.5 py-1 bg-p-600 text-white rounded-lg text-xs font-semibold">Save Edit & Accept</button>
+        </div>
+        <p class="text-slate-500 text-[10px]">${esc(s.reason||'')}</p>
+        <div class="flex gap-2 justify-end">
+          <button onclick="markSug('${esc(uid)}',${i},'rejected','${s.id||''}')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-semibold">Reject</button>
+          <button onclick="toggleEditSug('${esc(uid)}',${i})" class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg text-xs font-semibold">Edit</button>
+          <button onclick="markSug('${esc(uid)}',${i},'accepted','${s.id||''}')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold">Accept</button>
+        </div>
+      </div>`).join('')}
+    <div id="opt_applied_${uid}" class="hidden space-y-2 pt-2 border-t border-slate-200"></div>
+  </div>`;
+}
+
+async function markSug(uid, i, status, sugId=''){
+  const el=document.getElementById(`sug_${uid}_${i}`);
+  const badge=document.getElementById(`sug_badge_${uid}_${i}`);
+  if(!el) return;
+  el.dataset.sugStatus = status;
+  if(S.optSuggestions[i]) S.optSuggestions[i].status = status;
+  if(badge){
+    badge.textContent = status;
+    badge.className = `text-[10px] px-2 py-0.5 rounded-full font-semibold ${status==='accepted'||status==='edited'?'bg-emerald-100 text-emerald-800':status==='rejected'?'bg-red-100 text-red-800':'bg-slate-100 text-slate-600'}`;
+  }
+  el.classList.remove('opacity-60','opacity-40','border-emerald-300','line-through');
+  if(status==='accepted'||status==='edited') el.classList.add('border-emerald-300');
+  else if(status==='rejected') el.classList.add('opacity-50');
+  if(sugId){
+    await api(`/optimize/suggestion/${sugId}`, 'PUT', {status});
+  }
+  toast(status==='accepted'?'Suggestion accepted':'Suggestion rejected', status==='accepted'?'success':'info');
+}
+
+function toggleEditSug(uid, i){
+  const box=document.getElementById(`sug_editbox_${uid}_${i}`);
+  if(box) box.classList.toggle('hidden');
+}
+
+async function saveEditSug(uid, i, sugId=''){
+  const inp=document.getElementById(`sug_input_${uid}_${i}`);
+  const txt=document.getElementById(`sug_text_${uid}_${i}`);
+  const box=document.getElementById(`sug_editbox_${uid}_${i}`);
+  if(!inp) return;
+  const newVal = inp.value.trim();
+  if(txt) txt.textContent = newVal;
+  if(S.optSuggestions[i]){
+    S.optSuggestions[i].suggested = newVal;
+    S.optSuggestions[i].status = 'edited';
+  }
+  if(box) box.classList.add('hidden');
+  if(sugId){
+    await api(`/optimize/suggestion/${sugId}`, 'PUT', {status:'edited', suggested_text:newVal});
+  }
+  await markSug(uid, i, 'edited', '');
+}
+
+async function applyOptimizations(uid){
+  const orig = document.getElementById('optCvText')?.value?.trim() || S.optOriginalCvText || '';
+  const selectedCvId = document.getElementById('optSavedCvSelect')?.value || null;
+  const accepted = (S.optSuggestions||[]).filter(s=>s.status==='accepted'||s.status==='edited');
+  if(!accepted.length){
+    toast('Accept or edit at least one suggestion first','error');
+    return;
+  }
+  const r = await api('/optimize/apply','POST',{
+    cv_id: selectedCvId ? Number(selectedCvId) : null,
+    original_cv_text: orig,
+    session_id: uid,
+    suggestions: accepted,
+    save_as_new_cv: true
+  });
+  const outBox = document.getElementById(`opt_applied_${uid}`);
+  if(r.ok && r.data){
+    if(outBox){
+      outBox.classList.remove('hidden');
+      outBox.innerHTML = `
+        <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2">
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-xs text-emerald-800">✅ Applied ${r.data.applied_count} Change(s) — Original CV Preserved</span>
+            ${r.data.new_cv_id?`<button onclick="openCreatedCV(${r.data.new_cv_id})" class="text-xs text-p-700 underline font-semibold">Open Revised CV (#${r.data.new_cv_id})</button>`:''}
+          </div>
+          ${r.data.revised_cv_text?`
+            <textarea readonly rows="6" class="w-full text-xs bg-white border border-emerald-200 rounded-lg p-2 font-mono">${esc(r.data.revised_cv_text)}</textarea>
+            <button onclick="copyText(this.previousElementSibling.value)" class="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs font-semibold">Copy Revised CV Text</button>
+          `:''}
+        </div>`;
+    }
+    toast(`Applied ${r.data.applied_count} suggestion(s)!`,'success');
+  } else {
+    toast(r.data?.error||'Failed to apply changes','error');
+  }
+}
+
+function renderMatchCard(d){
+  const present=(d.keywords?.present||[]);
+  const missing=(d.keywords?.missing_important||[]);
+  const missingOpt=(d.keywords?.missing_optional||[]);
+  const reqRequired=(d.job_requirements?.required||[]);
+  const reqPreferred=(d.job_requirements?.preferred||[]);
+  return `<div class="tool-card space-y-3">
+    <span class="font-bold text-sm text-slate-800">🔍 Job Match & ATS Analysis</span>
+    <p class="text-xs text-slate-600">${esc(d.overall_match||'')}</p>
+    ${(reqRequired.length||reqPreferred.length)?`<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      ${reqRequired.length?`<div class="p-2 bg-slate-50 rounded-lg border border-slate-200"><p class="text-[10px] font-bold text-slate-700 mb-1">Required Qualifications</p>${reqRequired.map(r=>`<p class="text-[11px] text-slate-600">• ${esc(r)}</p>`).join('')}</div>`:''}
+      ${reqPreferred.length?`<div class="p-2 bg-slate-50 rounded-lg border border-slate-200"><p class="text-[10px] font-bold text-slate-700 mb-1">Preferred Qualifications</p>${reqPreferred.map(r=>`<p class="text-[11px] text-slate-600">• ${esc(r)}</p>`).join('')}</div>`:''}
+    </div>`:''}
+    ${(d.matching_qualifications||[]).length?`<div><p class="text-[10px] font-bold text-emerald-700 mb-1">✓ Matching Qualifications</p>${d.matching_qualifications.map(m=>`<p class="text-xs text-slate-700">✓ <strong>${esc(m.requirement||m)}</strong>${m.evidence?`: ${esc(m.evidence)}`:''}</p>`).join('')}</div>`:''}
+    <div>
+      <p class="text-[10px] font-bold text-emerald-700 mb-1">Keywords Present</p>
+      <div class="flex flex-wrap gap-1">${present.map(k=>`<span class="px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded text-[10px] font-medium">${esc(k)}</span>`).join('')}</div>
+    </div>
+    ${missing.length?`<div>
+      <p class="text-[10px] font-bold text-red-700 mb-1">Important Keywords Missing</p>
+      <div class="flex flex-wrap gap-1">${missing.map(k=>`<span class="px-2 py-0.5 bg-red-50 border border-red-200 text-red-700 rounded text-[10px] font-medium">${esc(k)}</span>`).join('')}</div>
+    </div>`:''}
+    ${missingOpt.length?`<div>
+      <p class="text-[10px] font-bold text-amber-700 mb-1">Optional Keywords Missing</p>
+      <div class="flex flex-wrap gap-1">${missingOpt.map(k=>`<span class="px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-700 rounded text-[10px] font-medium">${esc(k)}</span>`).join('')}</div>
+    </div>`:''}
+    ${(d.gaps||[]).length?`<div><p class="text-[10px] font-bold text-amber-700 mb-1">Gaps & Missing Information</p>${d.gaps.map(g=>`
+      <div class="text-xs text-slate-700 flex gap-2 items-start mt-1">
+        <span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${g.type==='confirmed_gap'?'bg-red-100 text-red-800':'bg-blue-100 text-blue-800'}">${g.type==='confirmed_gap'?'Confirmed Gap':'Missing Info'}</span>
+        <span><strong>${esc(g.requirement)}</strong>: ${esc(g.suggestion||'')}</span>
+      </div>`).join('')}</div>`:''}
+    ${(d.transferable_skills||[]).length?`<div><p class="text-[10px] font-bold text-indigo-700 mb-1">🔄 Transferable Skills</p>${d.transferable_skills.map(ts=>`<p class="text-xs text-slate-700">• ${esc(ts)}</p>`).join('')}</div>`:''}
+    ${(d.screening_concerns||[]).length?`<div><p class="text-[10px] font-bold text-amber-800 mb-1">⚠️ Screening & Formatting Concerns</p>${d.screening_concerns.map(sc=>`<p class="text-xs text-slate-700">• ${esc(sc)}</p>`).join('')}</div>`:''}
+    ${(d.cv_improvements||[]).length?`<div><p class="text-[10px] font-bold text-p-700 mb-1">✏️ Recommended Tailoring (Honest Rephrasing Only)</p>${d.cv_improvements.map(ci=>`
+      <div class="p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs mt-1">
+        <span class="font-bold text-slate-800">[${esc(ci.section||'CV')}]</span> ${esc(ci.suggestion||'')}
+        ${ci.reason?`<p class="text-[10px] text-slate-500 mt-0.5">${esc(ci.reason)}</p>`:''}
+      </div>`).join('')}</div>`:''}
+    <p class="text-[10px] text-slate-400 italic">${esc(d.disclaimer||'')}</p>
+  </div>`;
+}
+
+function renderInterviewQuestion(question, num, tip){
+  return `<div class="tool-card space-y-2 border-p-200 bg-p-50">
+    <div class="flex items-center gap-2">
+      <span class="w-6 h-6 rounded-full bg-p-600 text-white text-[10px] font-bold flex items-center justify-center">${num}</span>
+      <span class="font-bold text-sm text-p-800">Interview Question</span>
+    </div>
+    <p class="text-sm font-semibold text-slate-800">${esc(question)}</p>
+    ${tip?`<p class="text-[10px] text-p-700 bg-white/60 rounded-lg p-2">💡 ${esc(tip)}</p>`:''}
+    <p class="text-[10px] text-slate-500">Reply with your answer in the chat. Use STAR: Situation → Task → Action → Result.</p>
+  </div>`;
+}
+
+function renderAnswerEval(d){
+  const ev=d.evaluation||{};
+  const ratingColor={excellent:'bg-emerald-100 text-emerald-800',good:'bg-blue-100 text-blue-800',fair:'bg-amber-100 text-amber-800',needs_improvement:'bg-red-100 text-red-800'};
+  const col=ratingColor[ev.overall_rating]||ratingColor.fair;
+  const star=ev.star_analysis||{};
+  let out=`<div class="tool-card space-y-2.5">
+    <div class="flex justify-between items-center">
+      <span class="font-bold text-sm">Answer Evaluation</span>
+      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${col}">${esc(ev.overall_rating||'rated')}</span>
+    </div>`;
+  if(Object.keys(star).length){
+    out+=`<div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[10px]">
+      ${['situation','task','action','result'].map(k=>`
+        <div class="rounded-lg p-2 border ${star[k]?.present?'bg-emerald-50 border-emerald-200 text-emerald-800':'bg-slate-100 border-slate-200 text-slate-500'}">
+          <span class="font-bold block uppercase">${k} ${star[k]?.present?'✓':'○'}</span>
+          ${star[k]?.feedback?`<span class="block text-[9px] mt-0.5 leading-tight">${esc(star[k].feedback)}</span>`:''}
+        </div>`).join('')}
+    </div>`;
+  }
+  if(ev.strengths?.length) out+=`<div><p class="text-[10px] font-bold text-emerald-700">Strengths</p>${ev.strengths.map(s=>`<p class="text-xs text-emerald-700">✓ ${esc(s)}</p>`).join('')}</div>`;
+  if(ev.weaknesses?.length) out+=`<div><p class="text-[10px] font-bold text-amber-700">Areas to Improve</p>${ev.weaknesses.map(w=>`<p class="text-xs text-amber-700">⚠ ${esc(w)}</p>`).join('')}</div>`;
+  if(ev.recommendations?.length) out+=`<div><p class="text-[10px] font-bold text-p-700">Recommendations</p>${ev.recommendations.map(r=>`<p class="text-xs text-slate-700">💡 ${esc(r)}</p>`).join('')}</div>`;
+  if(ev.example_answer) out+=`<details class="bg-slate-50 p-2 rounded-lg border text-xs"><summary class="font-semibold text-p-700 cursor-pointer">Model Answer</summary><p class="mt-2 text-slate-600 italic">${esc(ev.example_answer)}</p></details>`;
+
+  if(d.next_question){
+    S.intQaId=d.next_qa_id; S.intQuestion=d.next_question; S.intNum=d.next_question_num||S.intNum+1;
+    out+=renderInterviewQuestion(d.next_question, S.intNum, d.next_tip);
+  }
+  out+=`</div>`;
+  return out;
+}
+
+function renderInterviewReportCard(d){
+  return `<div class="tool-card space-y-3">
+    <div class="flex justify-between items-center">
+      <p class="font-bold text-base text-slate-900">🏆 Interview Performance Report</p>
+      ${d.rating?`<span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-p-100 text-p-800">${esc(d.rating)}</span>`:''}
+    </div>
+    <p class="text-xs text-slate-700 leading-relaxed">${esc(d.overall_performance||'')}</p>
+    ${(d.key_strengths||[]).length?`<div><p class="text-[10px] font-bold text-emerald-700 mb-1">✓ Key Strengths</p>${d.key_strengths.map(s=>`<p class="text-xs text-emerald-700">✓ ${esc(s)}</p>`).join('')}</div>`:''}
+    ${(d.areas_for_improvement||[]).length?`<div><p class="text-[10px] font-bold text-amber-700 mb-1">↗ Areas for Improvement</p>${d.areas_for_improvement.map(a=>`<p class="text-xs text-amber-700">↗ ${esc(a)}</p>`).join('')}</div>`:''}
+    ${(d.patterns_observed||[]).length?`<div><p class="text-[10px] font-bold text-slate-700 mb-1">🔍 Patterns Observed</p>${d.patterns_observed.map(p=>`<p class="text-xs text-slate-600">• ${esc(p)}</p>`).join('')}</div>`:''}
+    ${(d.practice_plan||[]).length?`<div class="space-y-1.5"><p class="text-[10px] font-bold text-p-700">📋 Practice Plan</p>${d.practice_plan.map(p=>`
+      <div class="p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs">
+        <span class="font-bold text-slate-800">${esc(p.area||'Practice')}</span>
+        ${p.timeframe?`<span class="text-[10px] text-slate-400 ml-2">(${esc(p.timeframe)})</span>`:''}
+        <p class="text-slate-600 mt-0.5">${esc(p.action||'')}</p>
+      </div>`).join('')}</div>`:''}
+    ${d.encouragement?`<p class="text-xs text-indigo-800 bg-indigo-50 border border-indigo-100 rounded-lg p-2">💪 ${esc(d.encouragement)}</p>`:''}
+  </div>`;
+}
+
+function renderRejectionCard(d){
+  const a=d.analysis||{}; const p=d.improvement_plan||{};
+  const cats = [
+    {k:'cv_related', label:'CV-Related Factors'},
+    {k:'qualification_related', label:'Qualification-Related'},
+    {k:'application_related', label:'Application Strategy'},
+    {k:'interview_related', label:'Interview Performance'}
+  ].filter(c => Array.isArray(a[c.k]) && a[c.k].length);
+  return `<div class="tool-card space-y-3">
+    <span class="font-bold text-sm text-slate-800">💔 Rejection Analysis & Action Plan</span>
+    ${d.encouragement?`<p class="text-xs text-indigo-800 bg-indigo-50 border border-indigo-100 rounded-lg p-2">💪 ${esc(d.encouragement)}</p>`:''}
+    ${(a.likely_factors||[]).map(f=>`
+      <div class="text-xs p-2 bg-slate-50 rounded-lg border border-slate-200">
+        <span class="font-bold text-slate-800">${esc(f.factor)}</span>
+        <span class="ml-1 px-1.5 py-0.5 text-[9px] font-bold rounded ${f.evidence_type==='fact'?'bg-emerald-100 text-emerald-800':'bg-amber-100 text-amber-800'}">${esc(f.evidence_type||'inference')}</span>
+        ${f.likelihood?`<span class="ml-1 text-[9px] text-slate-400">(${esc(f.likelihood)} likelihood)</span>`:''}
+        <p class="text-slate-500 mt-1">${esc(f.explanation||'')}</p>
+      </div>`).join('')}
+    ${cats.length?`<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${cats.map(c=>`
+      <div class="p-2 bg-white border border-slate-200 rounded-lg text-xs">
+        <p class="text-[10px] font-bold text-slate-700 mb-1">${c.label}</p>
+        ${a[c.k].map(item=>`<p class="text-[11px] text-slate-600">• ${esc(item)}</p>`).join('')}
+      </div>`).join('')}</div>`:''}
+    ${(p.immediate_actions||[]).length?`<div><p class="text-[10px] font-bold text-p-700 mb-1">⚡ Immediate Actions</p>${p.immediate_actions.map(act=>`<p class="text-xs text-slate-700">→ <strong>[${esc(act.area||act.priority||'Action')}]</strong> ${esc(act.action||act)} ${act.expected_impact?`<span class="text-slate-400">(${esc(act.expected_impact)})</span>`:''}</p>`).join('')}</div>`:''}
+    ${(p.short_term||[]).length?`<div><p class="text-[10px] font-bold text-slate-700 mb-1">📅 Short-Term Plan (1–4 Weeks)</p>${p.short_term.map(st=>`<p class="text-xs text-slate-600">• ${esc(typeof st==='object'?(st.action||''):st)} ${st?.timeframe?`<span class="text-slate-400">(${esc(st.timeframe)})</span>`:''}</p>`).join('')}</div>`:''}
+    ${(p.long_term||[]).length?`<div><p class="text-[10px] font-bold text-slate-700 mb-1">🚀 Long-Term Development (1–3 Months)</p>${p.long_term.map(lt=>`<p class="text-xs text-slate-600">• ${esc(typeof lt==='object'?(lt.action||''):lt)} ${lt?.timeframe?`<span class="text-slate-400">(${esc(lt.timeframe)})</span>`:''}</p>`).join('')}</div>`:''}
+    <p class="text-[10px] text-slate-400 italic">${esc(d.disclaimer||'')}</p>
+  </div>`;
+}
+
+function renderOfferCard(d){
+  const s=d.summary||{}; const a=d.analysis||{}; const n=d.negotiation||{};
+  return `<div class="tool-card space-y-3">
+    <span class="font-bold text-sm text-slate-800">💼 Job Offer Review & Negotiation Guide</span>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+      <div class="p-2 bg-slate-50 border border-slate-200 rounded-lg"><span class="text-[10px] text-slate-500 block">Salary & Compensation</span><span class="font-bold">${esc(s.salary||'Not specified')}</span></div>
+      <div class="p-2 bg-slate-50 border border-slate-200 rounded-lg"><span class="text-[10px] text-slate-500 block">Working Arrangement</span><span class="font-bold">${esc(s.working_arrangements||'Not specified')}</span></div>
+    </div>
+    ${(s.benefits||[]).length?`<div><p class="text-[10px] font-bold text-slate-700 mb-1">🎁 Benefits</p><div class="flex flex-wrap gap-1">${s.benefits.map(b=>`<span class="px-2 py-0.5 bg-emerald-50 border border-emerald-200 rounded text-[10px] text-emerald-800">${esc(b)}</span>`).join('')}</div></div>`:''}
+    ${(a.positive_aspects||[]).length?`<div><p class="text-[10px] font-bold text-emerald-700 mb-1">✓ Positive Aspects</p>${a.positive_aspects.map(p=>`<p class="text-xs text-slate-700">✓ ${esc(p)}</p>`).join('')}</div>`:''}
+    ${(a.concerns||[]).map(c=>`
+      <div class="text-xs p-2 rounded-lg border ${c.severity==='high'?'bg-red-50 border-red-200':'bg-amber-50 border-amber-200'}">
+        <span class="font-bold">${esc(c.term)}</span>
+        <span class="ml-1 px-1 py-0.5 text-[9px] font-bold rounded ${c.severity==='high'?'bg-red-200 text-red-900':'bg-amber-200 text-amber-900'}">${esc(c.severity||'medium')}</span>
+        <p class="text-slate-600 mt-1">${esc(c.concern)}</p>
+      </div>`).join('')}
+    ${(a.unclear_terms||[]).length?`<div><p class="text-[10px] font-bold text-amber-700 mb-1">❓ Unclear / Missing Terms</p>${a.unclear_terms.map(u=>`<p class="text-xs text-slate-700">• ${esc(u)}</p>`).join('')}</div>`:''}
+    ${(a.questions_to_ask||[]).length?`<div><p class="text-[10px] font-bold text-p-700 mb-1">💬 Questions to Ask Employer</p>${a.questions_to_ask.map(q=>`<p class="text-xs text-slate-700">? ${esc(q)}</p>`).join('')}</div>`:''}
+    ${(n.strategies||[]).length?`<div class="space-y-1.5"><p class="text-[10px] font-bold text-slate-800">🤝 Negotiation Strategies</p>${n.strategies.map(st=>`
+      <div class="p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs">
+        <span class="font-bold text-p-700">${esc(st.topic||st.area||'Strategy')}:</span> ${esc(st.approach||'')}
+        ${(st.script||st.rationale)?`<p class="text-[11px] text-slate-600 italic mt-1">${esc(st.script||st.rationale)}</p>`:''}
+      </div>`).join('')}</div>`:''}
+    ${(n.talking_points||[]).length?`<div><p class="text-[10px] font-bold text-slate-700 mb-1">📌 Key Talking Points</p>${n.talking_points.map(tp=>`<p class="text-xs text-slate-700">• ${esc(tp)}</p>`).join('')}</div>`:''}
+    ${n.sample_message?`
+      <div>
+        <p class="text-[10px] font-bold text-slate-700 mb-1">✉️ Ready-to-Use Negotiation Draft:</p>
+        <textarea readonly rows="5" class="w-full text-[11px] font-mono bg-slate-50 border border-slate-200 rounded-lg p-2">${esc(n.sample_message)}</textarea>
+        <button onclick="copyText(this.previousElementSibling.value)" class="mt-1 px-3 py-1 bg-p-50 text-p-700 rounded-lg text-xs font-semibold">Copy draft</button>
+      </div>`:''}
+    <p class="text-[10px] text-slate-400 italic">${esc(d.disclaimer||'General guidance, not legal advice.')}</p>
+  </div>`;
+}
+
+function copyText(t){ navigator.clipboard.writeText(t).then(()=>toast('Copied!','success')); }
+
+// ═══════════════════════════════════════════════════════════════
+// MARKDOWN-LIKE FORMATTER (simple)
+// ═══════════════════════════════════════════════════════════════
+function formatMarkdown(text){
+  if(!text) return '';
+  return esc(text)
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/`(.+?)`/g,'<code class="bg-slate-100 px-1 rounded text-xs">$1</code>')
+    .replace(/\n/g,'<br>');
+}
+
+function esc(s){ const d=document.createElement('div'); d.textContent=String(s||''); return d.innerHTML; }
+
+// ═══════════════════════════════════════════════════════════════
+// SERVICE PAGES — direct API wiring
+// ═══════════════════════════════════════════════════════════════
+
+// ── Upload helper (service pages) ──
+async function uploadAndFill(e, targetId){
+  const file=e.target.files[0]; if(!file) return;
+  toast('Extracting text…');
+  const fd=new FormData(); fd.append('file',file);
+  const r=await api('/upload','POST',fd,true);
+  if(r.ok && r.data.extracted_text){
+    document.getElementById(targetId).value=r.data.extracted_text;
+    toast('Text extracted','success');
+  } else { toast('Failed to extract text','error'); }
+  e.target.value='';
+}
+
+function showLoading(containerId, msg='Analyzing…'){
+  document.getElementById(containerId).innerHTML=`
+    <div class="flex items-center gap-3 p-4 bg-white rounded-2xl border border-slate-200 text-sm text-slate-600">
+      <div class="flex gap-1"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>
+      <span>${msg}</span>
+    </div>`;
+}
+
+// ── CV Optimize page ──
+async function runOptimize(){
+  const text=document.getElementById('optCvText').value.trim();
+  const cvId=document.getElementById('optSavedCvSelect')?.value||null;
+  const targetRole=document.getElementById('optTargetRole')?.value?.trim()||'';
+  if(!text && !cvId){ toast('Please enter or select a CV first','error'); return; }
+  S.optOriginalCvText = text;
+  showLoading('optResults','Optimizing…');
+  const r=await api('/optimize','POST',{cv_text:text, cv_id:cvId?Number(cvId):null, target_role:targetRole, language:S.lang});
+  if(r.ok && r.data?.data?.suggestions){
+    document.getElementById('optResults').innerHTML=renderOptCard(r.data.data, r.data.session_id, text);
+  } else {
+    document.getElementById('optResults').innerHTML=`<p class="text-red-600 text-sm p-4">${esc(r.data?.error||'Failed')}</p>`;
+  }
+}
+
+// ── CV Evaluate page ──
+async function runEvaluate(){
+  const text=document.getElementById('evalCvText').value.trim();
+  const cvId=document.getElementById('evalSavedCvSelect')?.value||null;
+  const targetRole=document.getElementById('evalTargetRole')?.value?.trim()||'';
+  if(!text && !cvId){ toast('Please enter or select a CV first','error'); return; }
+  showLoading('evalResults','Evaluating…');
+  const r=await api('/evaluate','POST',{cv_text:text, cv_id:cvId?Number(cvId):null, target_role:targetRole, language:S.lang});
+  if(r.ok && r.data?.data){
+    document.getElementById('evalResults').innerHTML=renderEvalCard(r.data.data);
+  } else {
+    document.getElementById('evalResults').innerHTML=`<p class="text-red-600 text-sm p-4">${esc(r.data?.error||'Failed')}</p>`;
+  }
+}
+
+// ── Job Match page ──
+async function runMatch(){
+  const cv=document.getElementById('matchCv').value.trim();
+  const cvId=document.getElementById('matchSavedCvSelect')?.value||null;
+  const job=document.getElementById('matchJob').value.trim();
+  if((!cv && !cvId) || !job){ toast('Both CV and job description required','error'); return; }
+  showLoading('matchResults','Matching…');
+  const r=await api('/match','POST',{cv_text:cv, cv_id:cvId?Number(cvId):null, job_description:job, language:S.lang});
+  if(r.ok && r.data?.data){
+    document.getElementById('matchResults').innerHTML=renderMatchCard(r.data.data);
+  } else {
+    document.getElementById('matchResults').innerHTML=`<p class="text-red-600 text-sm p-4">${esc(r.data?.error||'Failed')}</p>`;
+  }
+}
+
+// ── Interview page ──
+let intPageSessionId=null, intPageQaId=null, intPageQuestion='', intPageNum=0;
+
+async function startInterview(){
+  const role=document.getElementById('intRole').value.trim();
+  if(!role){ toast('Please enter a target role','error'); return; }
+  const industry=document.getElementById('intIndustry')?.value?.trim()||'';
+  const cvId=document.getElementById('intSavedCvSelect')?.value||null;
+  const jobDesc=document.getElementById('intJobDesc')?.value?.trim()||'';
+  const r=await api('/interview/start','POST',{
+    target_role:role,
+    industry:industry,
+    cv_id:cvId?Number(cvId):null,
+    job_description:jobDesc,
+    interview_type:document.getElementById('intType').value,
+    difficulty:document.getElementById('intDiff').value,
+    language:S.lang
+  });
+  if(!r.ok){ toast(r.data?.error||'Failed to start session','error'); return; }
+  intPageSessionId=r.data.session_id;
+  document.getElementById('intSetup').classList.add('hidden');
+  document.getElementById('intChat').classList.remove('hidden');
+  document.getElementById('intStream').innerHTML='';
+  document.getElementById('intPostAnswerBtns')?.classList.add('hidden');
+
+  const qr=await api(`/interview/${intPageSessionId}/question`,'POST',{job_description:jobDesc});
+  if(qr.ok && qr.data?.data){
+    intPageQaId=qr.data.qa_id; intPageQuestion=qr.data.data.question; intPageNum=1;
+    appendIntQuestion(intPageQuestion,1,qr.data.data.tip);
+  }
+}
+
+function appendIntQuestion(q,num,tip){
+  document.getElementById('intStream').insertAdjacentHTML('beforeend',renderInterviewQuestion(q,num,tip));
+}
+
+async function submitIntAnswer(isRetry=false){
+  const ans=document.getElementById('intAnswer').value.trim();
+  if(!ans){ toast('Enter your answer first','error'); return; }
+  document.getElementById('intAnswer').value='';
+
+  document.getElementById('intStream').insertAdjacentHTML('beforeend',
+    `<div class="flex justify-end"><div class="bg-p-600 text-white text-xs rounded-2xl rounded-tr-sm px-4 py-2 max-w-[80%]">${esc(ans)}</div></div>`);
+
+  const r=await api(`/interview/${intPageSessionId}/answer`,'POST',{
+    qa_id:intPageQaId, question:intPageQuestion, answer:ans, retry:isRetry
+  });
+  if(r.ok && r.data?.data){
+    const ev=r.data.data; const html=renderAnswerEval({evaluation:ev});
+    document.getElementById('intStream').insertAdjacentHTML('beforeend',html);
+    document.getElementById('intPostAnswerBtns')?.classList.remove('hidden');
+    document.getElementById('intStream').lastElementChild?.scrollIntoView({behavior:'smooth'});
+  } else {
+    toast(r.data?.error||'Failed to evaluate answer','error');
+  }
+}
+
+function retryIntQuestion(){
+  document.getElementById('intPostAnswerBtns')?.classList.add('hidden');
+  appendIntQuestion(intPageQuestion, intPageNum, 'Retry this question applying the STAR feedback above.');
+  document.getElementById('intAnswer')?.focus();
+}
+
+async function nextIntQuestion(){
+  if(!intPageSessionId) return;
+  document.getElementById('intPostAnswerBtns')?.classList.add('hidden');
+  const jobDesc=document.getElementById('intJobDesc')?.value?.trim()||'';
+  const qr=await api(`/interview/${intPageSessionId}/question`,'POST',{job_description:jobDesc});
+  if(qr.ok && qr.data?.data){
+    intPageQaId=qr.data.qa_id; intPageQuestion=qr.data.data.question; intPageNum++;
+    appendIntQuestion(intPageQuestion,intPageNum,qr.data.data.tip);
+    document.getElementById('intStream').lastElementChild?.scrollIntoView({behavior:'smooth'});
+  } else {
+    toast(qr.data?.error||'Could not generate next question','error');
+  }
+}
+
+function resetIntSetup(){
+  document.getElementById('intSetup').classList.remove('hidden');
+  document.getElementById('intChat').classList.add('hidden');
+  document.getElementById('intPostAnswerBtns')?.classList.add('hidden');
+}
+
+async function endInterview(){
+  if(!intPageSessionId) return;
+  showLoading('intStream','Generating report…');
+  document.getElementById('intPostAnswerBtns')?.classList.add('hidden');
+  const r=await api(`/interview/${intPageSessionId}/report?language=${S.lang}`,'GET');
+  if(r.ok && r.data?.data){
+    const d=r.data.data;
+    document.getElementById('intStream').innerHTML = renderInterviewReportCard(d) + `
+      <div class="mt-3">
+        <button onclick="intPageSessionId=null;resetIntSetup();document.getElementById('intStream').innerHTML='';"
+          class="px-4 py-2 bg-p-600 text-white rounded-xl text-xs font-semibold">Start New Interview</button>
+      </div>`;
+  } else {
+    document.getElementById('intStream').innerHTML=`<p class="text-red-600 text-sm p-4">${esc(r.data?.error||'Failed to generate report')}</p>`;
+  }
+}
+
+// ── Rejection page ──
+async function runRejection(){
+  const details={
+    job_title:document.getElementById('rejJob').value.trim(),
+    company:document.getElementById('rejCompany').value.trim(),
+    application_details:document.getElementById('rejDetails').value.trim(),
+    feedback_received:document.getElementById('rejFeedback').value.trim(),
+    language:S.lang
+  };
+  if(!details.job_title && !details.application_details && !details.feedback_received){
+    toast('Enter job title or rejection details','error'); return;
+  }
+  showLoading('rejResults','Analyzing…');
+  const r=await api('/rejection/analyze','POST',details);
+  if(r.ok && r.data?.data){
+    document.getElementById('rejResults').innerHTML=renderRejectionCard(r.data.data);
+  } else {
+    document.getElementById('rejResults').innerHTML=`<p class="text-red-600 text-sm p-4">${esc(r.data?.error||'Failed')}</p>`;
+  }
+}
+
+// ── Offer page ──
+async function runOffer(){
+  const details=document.getElementById('offDetails').value.trim();
+  if(!details){ toast('Enter offer details','error'); return; }
+  showLoading('offerResults','Reviewing…');
+  const r=await api('/offer/review','POST',{
+    offer_details:details,
+    user_priorities:document.getElementById('offPriorities').value.trim(),
+    job_title:document.getElementById('offRole').value.trim(),
+    company:document.getElementById('offCompany').value.trim(),
+    language:S.lang
+  });
+  if(r.ok && r.data?.data){
+    document.getElementById('offerResults').innerHTML=renderOfferCard(r.data.data);
+  } else {
+    document.getElementById('offerResults').innerHTML=`<p class="text-red-600 text-sm p-4">${esc(r.data?.error||'Failed')}</p>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CV BUILDER & SAVED CVS MANAGEMENT
+// ═══════════════════════════════════════════════════════════════
+async function loadSavedCVsList(){
+  const r = await api('/cvs');
+  if(!r.ok || !Array.isArray(r.data)) return;
+  S.savedCvsCache = r.data;
+  const selects = [
+    {id:'cvSavedSelect', empty:'— Create New CV —'},
+    {id:'optSavedCvSelect', empty:'— Or paste/upload below —'},
+    {id:'evalSavedCvSelect', empty:'— Or paste/upload below —'},
+    {id:'matchSavedCvSelect', empty:'— Or paste/upload below —'},
+    {id:'intSavedCvSelect', empty:'— Select Saved CV (Optional) —'}
+  ];
+  selects.forEach(({id, empty})=>{
+    const sel = document.getElementById(id);
+    if(!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = `<option value="">${empty}</option>` + r.data.map(cv=>
+      `<option value="${cv.id}">#${cv.id} — ${esc(cv.title||cv.contact_info?.name||'CV')} (${esc(cv.language||'en').toUpperCase()})</option>`
+    ).join('');
+    if(id==='cvSavedSelect' && S.savedCvId) sel.value = String(S.savedCvId);
+    else if(cur) sel.value = cur;
+  });
+}
+
+function cvObjectToPlainText(cv){
+  if(!cv) return '';
+  const ci = cv.contact_info || {};
+  const lines = [];
+  if(ci.name) lines.push(ci.name);
+  const contact = [ci.email, ci.phone, ci.location, ci.linkedin].filter(Boolean).join(' | ');
+  if(contact) lines.push(contact);
+  if(cv.professional_summary) lines.push('\nPROFESSIONAL SUMMARY\n' + cv.professional_summary);
+  (cv.sections || []).forEach(sec=>{
+    lines.push('\n' + (sec.title||'SECTION').toUpperCase());
+    (sec.items || []).forEach(item=>{
+      if(typeof item === 'string'){
+        lines.push('- ' + item);
+      } else if(item && typeof item === 'object'){
+        const head = [item.title||item.degree||item.name, item.company||item.institution||item.technologies, item.date].filter(Boolean).join(' — ');
+        if(head) lines.push(head);
+        if(item.description) lines.push(item.description);
+      }
+    });
+  });
+  return lines.join('\n').trim();
+}
+
+async function fillFromSavedCV(cvId, textareaId){
+  if(!cvId) return;
+  const r = await api(`/cvs/${cvId}`);
+  if(r.ok && r.data){
+    const txt = cvObjectToPlainText(r.data);
+    const el = document.getElementById(textareaId);
+    if(el) el.value = txt;
+    toast(`Loaded CV #${cvId}`, 'success');
+  }
+}
+
+async function openCreatedCV(cvId){
+  showPage('cv-create');
+  await loadSavedCVsList();
+  const sel = document.getElementById('cvSavedSelect');
+  if(sel) sel.value = String(cvId);
+  await loadSelectedCV(cvId);
+}
+
+async function loadSelectedCV(cvId){
+  if(!cvId){ resetCVForm(); return; }
+  const r = await api(`/cvs/${cvId}`);
+  if(!r.ok || !r.data){ toast('Could not load CV','error'); return; }
+  const cv = r.data;
+  S.savedCvId = cv.id;
+  document.getElementById('btnDeleteCv')?.classList.remove('hidden');
+  const ci = cv.contact_info || {};
+  document.getElementById('cvName').value = ci.name || '';
+  document.getElementById('cvEmail').value = ci.email || '';
+  document.getElementById('cvPhone').value = ci.phone || '';
+  document.getElementById('cvLocation').value = ci.location || '';
+  document.getElementById('cvLinkedin').value = ci.linkedin || '';
+  document.getElementById('cvSummary').value = cv.professional_summary || '';
+  if(document.getElementById('cvTemplate')) document.getElementById('cvTemplate').value = cv.template || 'professional';
+  if(document.getElementById('cvDocLang')) document.getElementById('cvDocLang').value = cv.language || 'en';
+
+  S.experiences = [];
+  S.educations = [];
+  S.projects = [];
+  let skillsArr = [];
+  let certsArr = [];
+
+  (cv.sections || []).forEach(sec=>{
+    const t = (sec.title||'').toLowerCase();
+    const items = sec.items || [];
+    if(t.includes('exp') || t.includes('work') || t.includes('خبر')){
+      items.forEach(it=>{
+        if(typeof it === 'object') S.experiences.push({title:it.title||'', company:it.company||'', date:it.date||'', description:it.description||''});
+      });
+    } else if(t.includes('edu') || t.includes('تعليم') || t.includes('مؤهل')){
+      items.forEach(it=>{
+        if(typeof it === 'object') S.educations.push({degree:it.degree||it.title||'', institution:it.institution||it.company||'', date:it.date||'', details:it.details||it.description||''});
+      });
+    } else if(t.includes('proj') || t.includes('مشاريع') || t.includes('مشروع')){
+      items.forEach(it=>{
+        if(typeof it === 'object') S.projects.push({name:it.name||it.title||'', technologies:it.technologies||'', link:it.link||'', description:it.description||''});
+      });
+    } else if(t.includes('skill') || t.includes('مهار')){
+      items.forEach(it=>{
+        if(typeof it === 'string') skillsArr.push(it);
+        else if(it?.name) skillsArr.push(it.name);
+      });
+    } else if(t.includes('cert') || t.includes('achiev') || t.includes('شهاد') || t.includes('إنجاز')){
+      items.forEach(it=>{
+        if(typeof it === 'string') certsArr.push(it);
+        else if(typeof it === 'object') certsArr.push([it.name||it.title, it.issuer, it.date].filter(Boolean).join(' — '));
+      });
+    }
+  });
+
+  document.getElementById('cvSkills').value = skillsArr.join(', ');
+  if(document.getElementById('cvCerts')) document.getElementById('cvCerts').value = certsArr.join('\n');
+  renderExpList();
+  renderEduList();
+  renderProjList();
+  livePreview();
+  toast(`Loaded CV #${cv.id}`, 'success');
+}
+
+function resetCVForm(){
+  S.savedCvId = null;
+  document.getElementById('btnDeleteCv')?.classList.add('hidden');
+  if(document.getElementById('cvSavedSelect')) document.getElementById('cvSavedSelect').value = '';
+  ['cvName','cvTargetRole','cvEmail','cvPhone','cvLocation','cvLinkedin','cvSummary','cvSkills','cvCerts'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  S.experiences = [];
+  S.educations = [];
+  S.projects = [];
+  renderExpList();
+  renderEduList();
+  renderProjList();
+  livePreview();
+}
+
+async function deleteCurrentCV(){
+  if(!S.savedCvId) return;
+  if(!confirm(S.lang==='ar'?'هل تريد حذف هذه السيرة الذاتية؟':'Delete this saved CV?')) return;
+  const r = await api(`/cvs/${S.savedCvId}`, 'DELETE');
+  if(r.ok){
+    toast('CV deleted','info');
+    resetCVForm();
+    await loadSavedCVsList();
+  }
+}
+
+function addExp(){
+  S.experiences.push({title:'',company:'',date:'',description:''});
+  renderExpList();
+}
+function addEdu(){
+  S.educations.push({degree:'',institution:'',date:'',details:''});
+  renderEduList();
+}
+function addProj(){
+  S.projects.push({name:'',technologies:'',link:'',description:''});
+  renderProjList();
+}
+
+function moveItem(arrName, idx, dir){
+  const arr = S[arrName];
+  if(!arr) return;
+  const target = idx + dir;
+  if(target < 0 || target >= arr.length) return;
+  const tmp = arr[idx];
+  arr[idx] = arr[target];
+  arr[target] = tmp;
+  if(arrName==='experiences') renderExpList();
+  if(arrName==='educations') renderEduList();
+  if(arrName==='projects') renderProjList();
+  livePreview();
+}
+
+function renderExpList(){
+  const el = document.getElementById('expList');
+  if(!el) return;
+  el.innerHTML=S.experiences.map((e,i)=>`
+    <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+      <div class="flex justify-between items-center">
+        <span class="text-[10px] font-bold text-slate-500">Experience #${i+1}</span>
+        <div class="flex items-center gap-1.5">
+          <button onclick="generateAIDesc(${i})" class="px-2 py-0.5 bg-p-50 hover:bg-p-100 text-p-700 border border-p-200 rounded text-[10px] font-semibold">✨ AI Bullets</button>
+          <button onclick="moveItem('experiences',${i},-1)" class="text-slate-400 hover:text-slate-700 text-xs px-1" title="Move Up">↑</button>
+          <button onclick="moveItem('experiences',${i},1)" class="text-slate-400 hover:text-slate-700 text-xs px-1" title="Move Down">↓</button>
+          <button onclick="S.experiences.splice(${i},1);renderExpList();livePreview()" class="text-red-400 hover:text-red-600 px-1">✕</button>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <input placeholder="Job Title" value="${esc(e.title)}" oninput="S.experiences[${i}].title=this.value;livePreview()" class="border border-slate-300 rounded-lg px-2 py-1">
+        <input placeholder="Company" value="${esc(e.company)}" oninput="S.experiences[${i}].company=this.value;livePreview()" class="border border-slate-300 rounded-lg px-2 py-1">
+      </div>
+      <input placeholder="Dates (e.g., 2022 – Present)" value="${esc(e.date)}" oninput="S.experiences[${i}].date=this.value;livePreview()" class="w-full border border-slate-300 rounded-lg px-2 py-1">
+      <textarea rows="3" placeholder="Key responsibilities & achievements…" oninput="S.experiences[${i}].description=this.value;livePreview()" class="w-full border border-slate-300 rounded-xl px-2 py-1">${esc(e.description)}</textarea>
+    </div>`).join('');
+}
+
+function renderEduList(){
+  const el = document.getElementById('eduList');
+  if(!el) return;
+  el.innerHTML=S.educations.map((e,i)=>`
+    <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+      <div class="flex justify-between items-center">
+        <span class="text-[10px] font-bold text-slate-500">Education #${i+1}</span>
+        <div class="flex items-center gap-1">
+          <button onclick="moveItem('educations',${i},-1)" class="text-slate-400 hover:text-slate-700 text-xs px-1">↑</button>
+          <button onclick="moveItem('educations',${i},1)" class="text-slate-400 hover:text-slate-700 text-xs px-1">↓</button>
+          <button onclick="S.educations.splice(${i},1);renderEduList();livePreview()" class="text-red-400 hover:text-red-600 px-1">✕</button>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <input placeholder="Degree" value="${esc(e.degree)}" oninput="S.educations[${i}].degree=this.value;livePreview()" class="border border-slate-300 rounded-lg px-2 py-1">
+        <input placeholder="Institution" value="${esc(e.institution)}" oninput="S.educations[${i}].institution=this.value;livePreview()" class="border border-slate-300 rounded-lg px-2 py-1">
+      </div>
+      <input placeholder="Dates / Graduation Year" value="${esc(e.date)}" oninput="S.educations[${i}].date=this.value;livePreview()" class="w-full border border-slate-300 rounded-lg px-2 py-1">
+    </div>`).join('');
+}
+
+function renderProjList(){
+  const el = document.getElementById('projList');
+  if(!el) return;
+  el.innerHTML=S.projects.map((p,i)=>`
+    <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+      <div class="flex justify-between items-center">
+        <span class="text-[10px] font-bold text-slate-500">Project #${i+1}</span>
+        <div class="flex items-center gap-1">
+          <button onclick="moveItem('projects',${i},-1)" class="text-slate-400 hover:text-slate-700 text-xs px-1">↑</button>
+          <button onclick="moveItem('projects',${i},1)" class="text-slate-400 hover:text-slate-700 text-xs px-1">↓</button>
+          <button onclick="S.projects.splice(${i},1);renderProjList();livePreview()" class="text-red-400 hover:text-red-600 px-1">✕</button>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <input placeholder="Project Name" value="${esc(p.name)}" oninput="S.projects[${i}].name=this.value;livePreview()" class="border border-slate-300 rounded-lg px-2 py-1">
+        <input placeholder="Technologies Used" value="${esc(p.technologies)}" oninput="S.projects[${i}].technologies=this.value;livePreview()" class="border border-slate-300 rounded-lg px-2 py-1">
+      </div>
+      <textarea rows="2" placeholder="Project description & outcome…" oninput="S.projects[${i}].description=this.value;livePreview()" class="w-full border border-slate-300 rounded-xl px-2 py-1">${esc(p.description)}</textarea>
+    </div>`).join('');
+}
+
+async function generateAISummary(){
+  const docLang = document.getElementById('cvDocLang')?.value || S.lang;
+  const role = document.getElementById('cvTargetRole')?.value?.trim() || S.experiences[0]?.title || '';
+  const skills = document.getElementById('cvSkills')?.value?.trim() || '';
+  const expText = S.experiences.map(e=>`${e.title} at ${e.company}: ${e.description}`).join('; ');
+  if(!role && !skills && !expText){
+    toast('Enter a Target Role, Experience, or Skills first so AI can write an accurate summary','error');
+    return;
+  }
+  toast('Generating professional summary…');
+  const r = await api('/ai/generate-summary','POST',{
+    target_role: role,
+    experience: expText,
+    skills: skills,
+    language: docLang
+  });
+  const sumText = r.data?.summary || r.data?.data?.summary;
+  if(r.ok && sumText){
+    document.getElementById('cvSummary').value = sumText;
+    livePreview();
+    toast('Summary generated!','success');
+  } else {
+    toast(r.data?.error||'Failed to generate summary','error');
+  }
+}
+
+async function generateAIDesc(idx){
+  const exp = S.experiences[idx];
+  if(!exp || (!exp.title && !exp.description)){
+    toast('Enter a Job Title or brief notes first','error');
+    return;
+  }
+  const docLang = document.getElementById('cvDocLang')?.value || S.lang;
+  toast('Generating action-oriented bullets…');
+  const r = await api('/ai/generate-description','POST',{
+    role: exp.title,
+    company: exp.company,
+    responsibilities: exp.description || exp.title,
+    language: docLang
+  });
+  const descText = r.data?.description || r.data?.data?.description;
+  if(r.ok && descText){
+    S.experiences[idx].description = descText;
+    renderExpList();
+    livePreview();
+    toast('Experience bullets updated!','success');
+  } else {
+    toast(r.data?.error||'Failed to generate description','error');
+  }
+}
+
+function livePreview(){
+  const name    =document.getElementById('cvName')?.value||'';
+  const role    =document.getElementById('cvTargetRole')?.value||'';
+  const email   =document.getElementById('cvEmail')?.value||'';
+  const phone   =document.getElementById('cvPhone')?.value||'';
+  const location=document.getElementById('cvLocation')?.value||'';
+  const linkedin=document.getElementById('cvLinkedin')?.value||'';
+  const summary =document.getElementById('cvSummary')?.value||'';
+  const skills  =document.getElementById('cvSkills')?.value||'';
+  const certs   =document.getElementById('cvCerts')?.value||'';
+  const tpl     =document.getElementById('cvTemplate')?.value||'professional';
+  const docLang =document.getElementById('cvDocLang')?.value||S.lang;
+
+  const contact=[email,phone,location,linkedin].filter(Boolean).join(' | ');
+  const paper=document.getElementById('cvPreviewPaper'); if(!paper) return;
+  paper.dir = docLang==='ar' ? 'rtl' : 'ltr';
+
+  const hdrBorder = tpl==='modern' ? 'border-p-600' : tpl==='simple' ? 'border-slate-400' : 'border-slate-800';
+  const secColor  = tpl==='modern' ? 'text-p-700 border-p-200' : 'text-slate-800 border-slate-300';
+
+  let html=`<div class="text-center border-b-2 ${hdrBorder} pb-3 mb-4">
+    <h1 class="text-xl font-extrabold text-slate-900">${esc(name)||(docLang==='ar'?'الاسم الكامل':'Your Name')}</h1>
+    ${role?`<p class="text-xs font-semibold text-p-700 mt-0.5">${esc(role)}</p>`:''}
+    <p class="text-xs text-slate-500 mt-0.5">${esc(contact)}</p>
+  </div>`;
+
+  if(summary) html+=`<div class="mb-4"><h2 class="text-[10px] uppercase font-bold tracking-wider border-b ${secColor} pb-0.5 mb-1">${docLang==='ar'?'الملخص المهني':'Professional Summary'}</h2><p class="text-xs leading-relaxed text-slate-700">${esc(summary)}</p></div>`;
+
+  if(S.experiences.length){
+    html+=`<div class="mb-4"><h2 class="text-[10px] uppercase font-bold tracking-wider border-b ${secColor} pb-0.5 mb-2">${docLang==='ar'?'الخبرات العملية':'Work Experience'}</h2>`;
+    S.experiences.forEach(e=>{
+      html+=`<div class="mb-2"><div class="flex justify-between text-xs"><span class="font-bold">${esc(e.title)} <span class="font-normal text-slate-500">${e.company?'— '+esc(e.company):''}</span></span><span class="text-slate-400 text-[10px]">${esc(e.date)}</span></div>`;
+      if(e.description) html+=`<div class="pl-2 rtl:pl-0 rtl:pr-2 mt-0.5">${e.description.split('\n').filter(Boolean).map(l=>`<p class="text-[11px] text-slate-700">• ${esc(l.replace(/^[•\-]\s*/,''))}</p>`).join('')}</div>`;
+      html+=`</div>`;
+    });
+    html+=`</div>`;
+  }
+
+  if(S.educations.length){
+    html+=`<div class="mb-4"><h2 class="text-[10px] uppercase font-bold tracking-wider border-b ${secColor} pb-0.5 mb-2">${docLang==='ar'?'التعليم':'Education'}</h2>`;
+    S.educations.forEach(e=>{
+      html+=`<div class="flex justify-between text-xs mb-1"><span class="font-bold">${esc(e.degree)} <span class="font-normal text-slate-500">${e.institution?'— '+esc(e.institution):''}</span></span><span class="text-slate-400 text-[10px]">${esc(e.date)}</span></div>`;
+    });
+    html+=`</div>`;
+  }
+
+  if(S.projects.length){
+    html+=`<div class="mb-4"><h2 class="text-[10px] uppercase font-bold tracking-wider border-b ${secColor} pb-0.5 mb-2">${docLang==='ar'?'المشاريع':'Projects'}</h2>`;
+    S.projects.forEach(p=>{
+      html+=`<div class="mb-2"><div class="flex justify-between text-xs"><span class="font-bold">${esc(p.name)}</span><span class="text-slate-500 text-[10px]">${esc(p.technologies)}</span></div>`;
+      if(p.description) html+=`<p class="text-[11px] text-slate-700 mt-0.5">${esc(p.description)}</p>`;
+      html+=`</div>`;
+    });
+    html+=`</div>`;
+  }
+
+  if(skills){
+    const tags=skills.split(',').map(s=>s.trim()).filter(Boolean);
+    html+=`<div class="mb-4"><h2 class="text-[10px] uppercase font-bold tracking-wider border-b ${secColor} pb-0.5 mb-2">${docLang==='ar'?'المهارات':'Skills'}</h2>
+      <div class="flex flex-wrap gap-1">${tags.map(t=>`<span class="px-2 py-0.5 bg-slate-100 rounded text-[10px] text-slate-700">${esc(t)}</span>`).join('')}</div></div>`;
+  }
+
+  if(certs){
+    const certLines=certs.split('\n').map(s=>s.trim()).filter(Boolean);
+    if(certLines.length){
+      html+=`<div><h2 class="text-[10px] uppercase font-bold tracking-wider border-b ${secColor} pb-0.5 mb-1.5">${docLang==='ar'?'الشهادات والإنجازات':'Certifications & Achievements'}</h2>
+        ${certLines.map(c=>`<p class="text-[11px] text-slate-700">• ${esc(c.replace(/^[•\-]\s*/,''))}</p>`).join('')}</div>`;
+    }
+  }
+
+  paper.innerHTML=html;
+}
+
+function buildCVPayload(){
+  const docLang = document.getElementById('cvDocLang')?.value || S.lang;
+  const tpl     = document.getElementById('cvTemplate')?.value || 'professional';
+  const certs   = (document.getElementById('cvCerts')?.value||'').split('\n').map(s=>s.trim()).filter(Boolean);
+  return {
+    title: (document.getElementById('cvName')?.value||'My CV')+' CV',
+    language: docLang,
+    contact_info:{
+      name:    document.getElementById('cvName')?.value||'',
+      email:   document.getElementById('cvEmail')?.value||'',
+      phone:   document.getElementById('cvPhone')?.value||'',
+      location:document.getElementById('cvLocation')?.value||'',
+      linkedin:document.getElementById('cvLinkedin')?.value||''
+    },
+    professional_summary: document.getElementById('cvSummary')?.value||'',
+    sections:[
+      ...(S.experiences.length?[{title:docLang==='ar'?'الخبرات العملية':'Work Experience',items:S.experiences}]:[]),
+      ...(S.educations.length?[{title:docLang==='ar'?'التعليم':'Education',items:S.educations}]:[]),
+      ...(S.projects.length?[{title:docLang==='ar'?'المشاريع':'Projects',items:S.projects}]:[]),
+      ...((document.getElementById('cvSkills')?.value||'')?[{title:docLang==='ar'?'المهارات':'Skills',items:(document.getElementById('cvSkills').value).split(',').map(s=>s.trim()).filter(Boolean)}]:[]),
+      ...(certs.length?[{title:docLang==='ar'?'الشهادات والإنجازات':'Certifications & Achievements',items:certs}]:[])
+    ],
+    template: tpl
+  };
+}
+
+async function saveCVDraft(){
+  const name = document.getElementById('cvName')?.value?.trim();
+  if(!name){ toast('Please enter your Full Name before saving','error'); return false; }
+  const payload=buildCVPayload();
+  const method = S.savedCvId ? 'PUT' : 'POST';
+  const url    = S.savedCvId ? `/cvs/${S.savedCvId}` : '/cvs';
+  const r=await api(url, method, payload);
+  if(r.ok){
+    S.savedCvId=r.data.id||S.savedCvId;
+    document.getElementById('btnDeleteCv')?.classList.remove('hidden');
+    await loadSavedCVsList();
+    toast('Draft saved (ID '+S.savedCvId+')','success');
+    return true;
+  } else {
+    toast('Save failed','error');
+    return false;
+  }
+}
+
+async function exportPDF(){
+  const ok = await saveCVDraft();
+  if(ok && S.savedCvId) window.open(`/api/cvs/${S.savedCvId}/export/pdf`,'_blank');
+}
+
+async function exportDOCX(){
+  const ok = await saveCVDraft();
+  if(ok && S.savedCvId) window.open(`/api/cvs/${S.savedCvId}/export/docx`,'_blank');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async ()=>{
+  applyTranslations();
+  await checkStatus();
+  await loadConversations();
+  await loadSavedCVsList();
+  livePreview();
+  renderExpList();
+  renderEduList();
+  renderProjList();
+});
+</script>
+</body>
+</html>
