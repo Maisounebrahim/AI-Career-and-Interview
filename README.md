@@ -23,11 +23,6 @@ A comprehensive, locally-hosted career coaching web application that helps you c
 - 🔒 Privacy-first: all data stays on your computer
 - 📱 Responsive design for desktop and mobile
 
-## Quick Start (Windows)
-
-### Prerequisites
-- **Python 3.10+** installed and in PATH
-- **8 GB RAM** minimum
 
 ### Installation
 
@@ -40,50 +35,7 @@ A comprehensive, locally-hosted career coaching web application that helps you c
 
 That's it!
 
-### Manual Installation
 
-```bash
-# Create virtual environment
-python -m venv venv
-
-# Activate it
-venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Start the application
-python app.py
-```
-
-## AI Configuration (Optional)
-
-AI features require an API key from an OpenAI-compatible provider.
-
-### Setup
-
-1. Copy `.env.example` to `.env.local`:
-   ```bash
-   copy .env.example .env.local
-   ```
-
-2. Edit `.env.local` and set your API key:
-   ```
-   AI_API_KEY=sk-your-actual-api-key
-   AI_MODEL=gpt-4o-mini
-   ```
-
-3. Restart the application.
-
-### Supported Providers
-
-| Provider | Setup |
-|----------|-------|
-| **OpenAI** | Get key from [platform.openai.com](https://platform.openai.com/api-keys) |
-| **Azure OpenAI** | Set `AI_PROVIDER=azure` and `AI_API_BASE=https://your-endpoint.openai.azure.com/` |
-| **Any OpenAI-compatible** | Set `AI_PROVIDER=compatible` and `AI_API_BASE=https://your-provider-url/v1` |
-
-### Without AI
 
 CV Creation works fully without AI — you can build, edit, preview, and export CVs. All other services display a clear message explaining that AI configuration is needed.
 
