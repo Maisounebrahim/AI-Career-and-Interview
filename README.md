@@ -24,12 +24,6 @@ A comprehensive, locally-hosted career coaching web application that helps you c
 - 📱 Responsive design for desktop and mobile
 
 
-### Installation
-
-1. **Double-click `start.bat`** — it will:
-   - Create a virtual environment
-   - Install dependencies
-   - Start the server
 
 2. **Open your browser** to: **http://localhost:3000**
 
@@ -39,13 +33,6 @@ That's it!
 
 CV Creation works fully without AI — you can build, edit, preview, and export CVs. All other services display a clear message explaining that AI configuration is needed.
 
-## Privacy & Data
-
-- **All data is stored locally** in `data/career_coach.db` (SQLite)
-- **Uploaded files** are stored in the `uploads/` directory
-- **When AI is used**, your CV text/interview answers are sent to the configured AI provider for processing
-- **No data is sent anywhere** unless you explicitly use an AI-powered feature
-- You can delete your data through the application or by deleting the `data/` and `uploads/` folders
 
 ## Project Structure
 
