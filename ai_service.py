@@ -10,7 +10,8 @@ from config import Config
 # All secrets are loaded from .env.local via Config – no hardcoded keys.
 # ---------------------------------------------------------------------------
 
-GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
+#  GEMINI_BASE_URL ==> Hashed to protect privacy
+GEMINI_BASE_URL = "..................."
 GEMINI_MODEL = "gemini-3.5-flash-lite"
 
 
