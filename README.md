@@ -6,15 +6,15 @@ A comprehensive, locally-hosted career coaching web application that helps you c
 
 ### 7 Core Services
 
-| # | Service | Description | AI Required? |
-|---|---------|-------------|:------------:|
-| 1 | **CV Creation** | Build professional CVs with live preview, multiple templates, PDF/DOCX export | Optional |
-| 2 | **CV Optimization** | Upload a CV and get targeted improvement suggestions | ✅ Yes |
-| 3 | **CV Evaluation** | Comprehensive quality assessment with scores and actionable feedback | ✅ Yes |
-| 4 | **Job Matching** | Compare your CV against a job description, find gaps and keywords | ✅ Yes |
-| 5 | **Mock Interviews** | Interactive interview practice with evaluation and feedback | ✅ Yes |
-| 6 | **Rejection Analysis** | Understand rejections and build improvement plans | ✅ Yes |
-| 7 | **Offer Review** | Analyze offers, identify concerns, get negotiation strategies | ✅ Yes |
+| # | Service | Description | 
+|---|---------|-------------|
+| 1 | **CV Creation** | Build professional CVs with live preview, multiple templates, PDF/DOCX export  |
+| 2 | **CV Optimization** | Upload a CV and get targeted improvement suggestions  |
+| 3 | **CV Evaluation** | Comprehensive quality assessment with scores and actionable feedback  |
+| 4 | **Job Matching** | Compare your CV against a job description, find gaps and keywords  |
+| 5 | **Mock Interviews** | Interactive interview practice with evaluation and feedback |
+| 6 | **Rejection Analysis** | Understand rejections and build improvement plans  |
+| 7 | **Offer Review** | Analyze offers, identify concerns, get negotiation strategies  |
 
 ### Additional Features
 - 🌐 English and Arabic interface (RTL support)
@@ -56,25 +56,7 @@ project/
     └── test_app.py     # Automated tests
 ```
 
-## Running Tests
 
-```bash
-# Activate virtual environment
-venv\Scripts\activate
-
-# Run tests
-python -m pytest tests/ -v
-```
-
-## Troubleshooting
-
-| Issue | Solution |
-|-------|----------|
-| Port 3000 in use | Edit `FLASK_PORT` in `.env.local` |
-| Python not found | Install from [python.org](https://www.python.org/downloads/) and check "Add to PATH" |
-| PDF export fails | Run `pip install reportlab` |
-| DOCX import fails | Run `pip install python-docx PyPDF2` |
-| AI not working | Check `AI_API_KEY` in `.env.local`, ensure it's valid |
 
 ## Technology Stack
 
