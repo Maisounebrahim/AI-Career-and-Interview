@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>AI Career Coach</title>
+<title>CareerCompass AI — AI Career Coach</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>tailwind.config={theme:{extend:{colors:{p:{50:'#eef2ff',100:'#e0e7ff',500:'#6366f1',600:'#4f46e5',700:'#4338ca',900:'#312e81'}}}}}</script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -28,7 +28,7 @@ pre{white-space:pre-wrap;font-family:inherit}
 .score-fill{height:100%;border-radius:3px;transition:width .5s}
 ::-webkit-scrollbar{width:5px}
 ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
-textarea:focus,input:focus{outline:2px solid #4f46e5;outline-offset:0}
+textarea:focus,input:focus,button:focus-visible,select:focus-visible{outline:3px solid #4f46e5;outline-offset:2px}
 .page-section{display:none}
 /* Active page fills the main container */
 .page-section.active{display:flex;flex-direction:column;flex:1;min-height:0}
@@ -36,6 +36,19 @@ textarea:focus,input:focus{outline:2px solid #4f46e5;outline-offset:0}
 .page-section.active:not(#page-chat){overflow-y:auto}
 /* Chat page clips overflow — inner panels handle their own scroll */
 #page-chat.active{overflow:hidden}
+/* Screen reader utility */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+/* Low-vision Large Text Mode (Salma Accessibility) */
+body.cc-large-text{font-size:112%}
+body.cc-large-text .text-xs{font-size:0.95rem !important;line-height:1.5 !important}
+body.cc-large-text .text-\[10px\],body.cc-large-text .text-\[11px\]{font-size:0.875rem !important;line-height:1.45 !important}
+body.cc-large-text .text-sm{font-size:1.05rem !important;line-height:1.6 !important}
+/* High Contrast Mode (Salma Accessibility) */
+body.cc-high-contrast{color:#0f172a !important}
+body.cc-high-contrast .text-slate-400,body.cc-high-contrast .text-slate-500,body.cc-high-contrast .text-slate-600{color:#0f172a !important;font-weight:500}
+body.cc-high-contrast .border-slate-200,body.cc-high-contrast .border-slate-300{border-color:#334155 !important}
+body.cc-high-contrast button:focus-visible,body.cc-high-contrast input:focus-visible,body.cc-high-contrast textarea:focus-visible{outline:3px solid #1e1b4b !important;outline-offset:2px !important}
+@media (prefers-reduced-motion: reduce){*,::before,::after{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important;scroll-behavior:auto !important}}
 </style>
 </head>
 <body class="bg-slate-100 h-screen flex flex-col overflow-hidden">
@@ -61,12 +74,23 @@ textarea:focus,input:focus{outline:2px solid #4f46e5;outline-offset:0}
     </nav>
     <!-- Right controls -->
     <div class="flex items-center gap-2">
+      <button id="onboardingTriggerBtn" type="button" onclick="window.CCOnboarding && window.CCOnboarding.openTutorial()"
+        aria-label="Open interactive onboarding tutorial and help guide"
+        class="text-xs font-bold px-2.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-p-700 border border-indigo-200 flex items-center gap-1 shadow-sm">
+        🎓 <span>Tutorial & Help</span>
+      </button>
+      <button id="headerA11yBtn" type="button" onclick="window.CCOnboarding && window.CCOnboarding.toggleLargeText()"
+        aria-label="Toggle large text mode for low-vision accessibility"
+        title="Low-Vision Accessibility: Toggle Larger Text (A+)"
+        class="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 hidden sm:flex items-center gap-1">
+        👁️ <span>A+</span>
+      </button>
       <span id="aiDot" class="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border border-amber-200 bg-amber-50 text-amber-800 cursor-pointer" onclick="showAIInfo()">
         <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse" id="aiDotInner"></span>
         <span id="aiDotLabel">AI…</span>
       </span>
-      <button onclick="toggleLang()" class="text-xs font-semibold px-2.5 py-1 border border-slate-200 rounded-lg hover:bg-slate-100" id="langBtn">ع</button>
-      <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-600">☰</button>
+      <button onclick="toggleLang()" aria-label="Switch interface language between English and Arabic" class="text-xs font-semibold px-2.5 py-1 border border-slate-200 rounded-lg hover:bg-slate-100" id="langBtn">ع</button>
+      <button onclick="toggleSidebar()" aria-label="Toggle navigation sidebar" class="md:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-600">☰</button>
     </div>
   </div>
 </header>
@@ -94,10 +118,24 @@ textarea:focus,input:focus{outline:2px solid #4f46e5;outline-offset:0}
     <div id="convList" class="flex-1 overflow-y-auto p-2 space-y-1 text-xs">
       <p class="text-slate-400 text-center mt-4" data-t="noHistory">No chats yet</p>
     </div>
+    <!-- Sidebar Footer: Replay Onboarding & Accessibility Shortcut -->
+    <div class="p-2.5 border-t border-slate-200 bg-slate-50 space-y-1.5 text-xs">
+      <button type="button" onclick="window.CCOnboarding && window.CCOnboarding.openTutorial()"
+        class="w-full py-1.5 px-2.5 bg-white hover:bg-indigo-50 text-p-700 border border-slate-200 rounded-lg font-bold text-left rtl:text-right flex items-center justify-between">
+        <span>🎓 Interactive Tutorial</span>
+        <span class="text-[10px] text-slate-400">3 Stages</span>
+      </button>
+      <button type="button" onclick="window.CCOnboarding && window.CCOnboarding.restartTutorial()"
+        class="w-full py-1 px-2.5 text-slate-600 hover:text-p-700 rounded-lg font-semibold text-left rtl:text-right text-[11px]">
+        🔄 Replay Tutorial from Step 1
+      </button>
+    </div>
   </aside>
 
   <!-- MAIN PAGES CONTAINER -->
   <main id="mainContainer" class="flex-1 min-h-0 flex flex-col">
+    <!-- Non-Intrusive Contextual Co-pilot Page Guide -->
+    <div id="contextualHelpBar" role="region" aria-label="Contextual Co-pilot Page Guide" class="flex-shrink-0"></div>
 
     <!-- ══ PAGE: CHAT ══════════════════════════════════════════════════ -->
     <div id="page-chat" class="page-section active flex flex-col h-full overflow-hidden">
@@ -1539,10 +1577,15 @@ async function loadSavedCVsList(){
   if(!r.ok || !Array.isArray(r.data)) return;
   S.savedCvsCache = r.data;
   const selects = [
+    {id:'savedCvSelect', empty:'— Create New CV —'},
     {id:'cvSavedSelect', empty:'— Create New CV —'},
+    {id:'optCvSelect', empty:'— Or paste/upload below —'},
     {id:'optSavedCvSelect', empty:'— Or paste/upload below —'},
+    {id:'evalCvSelect', empty:'— Or paste/upload below —'},
     {id:'evalSavedCvSelect', empty:'— Or paste/upload below —'},
+    {id:'matchCvSelect', empty:'— Or paste/upload below —'},
     {id:'matchSavedCvSelect', empty:'— Or paste/upload below —'},
+    {id:'intCvSelect', empty:'— Select Saved CV (Optional) —'},
     {id:'intSavedCvSelect', empty:'— Select Saved CV (Optional) —'}
   ];
   selects.forEach(({id, empty})=>{
@@ -1972,5 +2015,19 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   renderProjList();
 });
 </script>
+<!-- Screen Reader Live Region for Onboarding Announcements -->
+<div id="obAriaLive" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+<!-- Interactive 3-Stage Onboarding Modal -->
+<div id="onboardingModal"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="onboardingTitle"
+     aria-describedby="onboardingStageDesc"
+     aria-hidden="true"
+     class="hidden fixed inset-0 z-50 bg-slate-900/65 backdrop-blur-[1px] flex items-center justify-center p-2 sm:p-4">
+</div>
+
+<script src="/static/onboarding.js"></script>
 </body>
 </html>

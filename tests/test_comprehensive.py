@@ -347,3 +347,70 @@ class TestRegressionFixes:
         assert end_res["data"]["rating"] == "ready"
 
 
+class TestOnboardingIntegration:
+    """Verify the 3-stage interactive onboarding experience and User Control & Agency integration."""
+
+    def test_index_includes_onboarding_modal_and_accessibility_hooks(self, client):
+        resp = client.get("/")
+        assert resp.status_code == 200
+        html = resp.get_data(as_text=True)
+        assert 'id="onboardingModal"' in html
+        assert 'id="onboardingTriggerBtn"' in html
+        assert 'id="obAriaLive"' in html
+        assert 'id="contextualHelpBar"' in html
+        assert '/static/onboarding.js' in html
+        assert 'cc-large-text' in html
+        assert 'cc-high-contrast' in html
+
+    def test_onboarding_script_serves_all_three_stages_and_personas(self, client):
+        resp = client.get("/static/onboarding.js")
+        assert resp.status_code == 200
+        js = resp.get_data(as_text=True)
+        # Verify 3 progressive stages
+        assert "Stage 1: The System Does It" in js
+        assert "Stage 2: Co-pilot" in js
+        assert "Stage 3: The User Does It" in js
+        # Verify required HAI control & completion messages
+        assert "AI can help you explore options and improve your work, but you remain in control of every important decision." in js
+        assert "You're ready to take control of your career journey!" in js
+        # Verify 3 project personas
+        assert "Mostafa" in js
+        assert "Nour Hassan" in js
+        assert "Salma Adel" in js
+        # Verify synthetic data labeling
+        assert "SYNTHETIC SAMPLE" in js
+
+    def test_onboarding_user_control_apply_workflow(self, client):
+        """Verify the /api/optimize/apply endpoint used by Onboarding Step 5 (User Control Lab)."""
+        original_text = (
+            "Helped the team clean sales data and fix missing values.\n\n"
+            "Made weekly charts and dashboards for store managers."
+        )
+        suggestions = [
+            {
+                "section": "Experience",
+                "original": "Helped the team clean sales data and fix missing values.",
+                "suggested": "Cleaned retail sales datasets using Python (Pandas).",
+                "user_edited_text": "Cleaned and validated retail sales datasets using Python (Pandas) and SQL.",
+                "status": "edited",
+            },
+            {
+                "section": "Experience",
+                "original": "Made weekly charts and dashboards for store managers.",
+                "suggested": "Built weekly Power BI dashboards for store managers.",
+                "status": "rejected",
+            },
+        ]
+        res = client.post(
+            "/api/optimize/apply",
+            json={"original_cv_text": original_text, "suggestions": suggestions},
+        )
+        assert res.status_code == 200
+        data = res.get_json()
+        assert data["success"] is True
+        assert data["applied_count"] == 1
+        assert "Cleaned and validated retail sales datasets using Python (Pandas) and SQL." in data["revised_cv_text"]
+        assert "Made weekly charts and dashboards for store managers." in data["revised_cv_text"]
+
+
+
